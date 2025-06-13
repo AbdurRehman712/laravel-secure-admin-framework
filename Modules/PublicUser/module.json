@@ -1,0 +1,11 @@
+{
+    "name": "PublicUser",
+    "alias": "publicuser",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\PublicUser\\app\\Providers\\PublicUserServiceProvider"
+    ],
+    "files": []
+}
