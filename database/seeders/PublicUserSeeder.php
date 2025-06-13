@@ -28,16 +28,14 @@ class PublicUserSeeder extends Seeder
             'delete own posts',
             'moderate posts',
             'access premium content',
-        ];
-
-        foreach ($permissions as $permission) {
+        ];        foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Assign permissions to roles
-        $userRole->givePermissionTo(['view posts', 'create posts', 'edit own posts', 'delete own posts']);
-        $premiumRole->givePermissionTo(['view posts', 'create posts', 'edit own posts', 'delete own posts', 'access premium content']);
-        $moderatorRole->givePermissionTo(['view posts', 'create posts', 'edit own posts', 'delete own posts', 'moderate posts']);
+        // Assign permissions to roles (using sync to avoid duplicates)
+        $userRole->syncPermissions(['view posts', 'create posts', 'edit own posts', 'delete own posts']);
+        $premiumRole->syncPermissions(['view posts', 'create posts', 'edit own posts', 'delete own posts', 'access premium content']);
+        $moderatorRole->syncPermissions(['view posts', 'create posts', 'edit own posts', 'delete own posts', 'moderate posts']);
 
         // Create sample users
         $users = [
@@ -86,10 +84,10 @@ class PublicUserSeeder extends Seeder
                     'email_verified_at' => $userData['email_verified_at'],
                     'password' => $userData['password'],
                 ]
-            );
-
-            // Assign role to user
-            $user->assignRole($userData['role']);
+            );            // Assign role to user (using sync to avoid duplicates)
+            if (!$user->hasRole($userData['role'])) {
+                $user->assignRole($userData['role']);
+            }
         }
     }
 }

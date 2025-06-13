@@ -1,0 +1,37 @@
+/* Custom branding styles for SecureAdmin Framework */
+.fi-sidebar-header {
+    position: relative;
+}
+
+.fi-sidebar-header::after {
+    content: "by H. Sol";
+    display: block;
+    font-size: 0.75rem;
+    color: #f59e0b;
+    font-weight: 500;
+    margin-top: -0.25rem;
+}
+
+.fi-logo {
+    position: relative;
+}
+
+.fi-logo::before {
+    content: "🛡️";
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+}
+
+/* Login page custom styles */
+.fi-simple-layout .fi-simple-header {
+    position: relative;
+}
+
+.fi-simple-layout .fi-simple-header::after {
+    content: "Secure Admin Framework";
+    display: block;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+    font-weight: 400;
+}

@@ -60,8 +60,10 @@ class AdminSeeder extends Seeder
             ]
         );
 
-        // Assign Super Admin role
-        $admin->assignRole('Super Admin');
+        // Assign Super Admin role (check if not already assigned)
+        if (!$admin->hasRole('Super Admin')) {
+            $admin->assignRole('Super Admin');
+        }
 
         // Create a regular admin user
         $regularAdmin = Admin::firstOrCreate(
@@ -73,7 +75,9 @@ class AdminSeeder extends Seeder
             ]
         );
 
-        // Assign Admin role
-        $regularAdmin->assignRole('Admin');
+        // Assign Admin role (check if not already assigned)
+        if (!$regularAdmin->hasRole('Admin')) {
+            $regularAdmin->assignRole('Admin');
+        }
     }
 }
