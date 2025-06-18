@@ -20,35 +20,30 @@ class AdminSeeder extends Seeder
         $superAdminRole = Role::findOrCreate('Super Admin', 'admin');
         $adminRole = Role::findOrCreate('Admin', 'admin');
 
-        // Create permissions
-        $permissions = [
-            'view_admins',
-            'create_admins',
-            'edit_admins',
-            'delete_admins',
-            'view_roles',
-            'create_roles',
-            'edit_roles',
-            'delete_roles',
-            'view_permissions',
-            'create_permissions',
-            'edit_permissions',
-            'delete_permissions',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission, 'admin');
+        // Ensure module permissions are registered
+        \App\Services\ModulePermissionService::registerAllPermissions();
+        
+        // Get module-based permissions
+        $allModulePermissions = [];
+        $modules = \App\Services\ModulePermissionService::getModulesWithPermissions();
+        
+        foreach ($modules as $moduleName => $permissions) {
+            foreach ($permissions as $permission) {
+                $allModulePermissions[] = $permission['name'];
+            }
         }
 
-        // Assign all permissions to Super Admin
-        $superAdminRole->syncPermissions($permissions);
+        // Assign all module permissions to Super Admin
+        $superAdminRole->syncPermissions($allModulePermissions);
         
-        // Assign limited permissions to Admin
-        $adminRole->syncPermissions([
-            'view_admins',
-            'create_admins',
-            'edit_admins',
-        ]);
+        // Assign limited permissions to Admin (just admin management)
+        $adminPermissions = [];
+        foreach ($allModulePermissions as $permission) {
+            if (str_contains($permission, '_admin')) {
+                $adminPermissions[] = $permission;
+            }
+        }
+        $adminRole->syncPermissions($adminPermissions);
 
         // Create default Super Admin user
         $admin = Admin::firstOrCreate(

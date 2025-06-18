@@ -12,9 +12,11 @@ use Modules\Core\app\Filament\Resources\AdminResource\Pages;
 use Modules\Core\app\Models\Admin;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use App\Filament\Concerns\HasModulePermissions;
 
 class AdminResource extends Resource
 {
+    use HasModulePermissions;
     protected static ?string $model = Admin::class;
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-users';

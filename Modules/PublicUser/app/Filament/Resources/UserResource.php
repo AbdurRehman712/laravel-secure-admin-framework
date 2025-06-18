@@ -12,9 +12,11 @@ use Modules\PublicUser\app\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use App\Filament\Concerns\HasModulePermissions;
 
 class UserResource extends Resource
 {
+    use HasModulePermissions;
     protected static ?string $model = User::class;
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-user-group';

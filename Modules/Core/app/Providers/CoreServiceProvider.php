@@ -156,41 +156,14 @@ class CoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register default permissions for Admin model inside Core module.
+     * Register permissions using the new module-based system.
      */
     protected function registerPermissions(): void
     {
-        $permissions = [
-            'view_admins',
-            'create_admins',
-            'edit_admins',
-            'delete_admins',
-            'view_roles',
-            'create_roles',
-            'edit_roles',
-            'delete_roles',
-            'view_permissions',
-            'create_permissions',
-            'edit_permissions',
-            'delete_permissions',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission, 'admin');
-        }
-
-        // Create default roles
-        $superAdminRole = Role::findOrCreate('Super Admin', 'admin');
-        $adminRole = Role::findOrCreate('Admin', 'admin');
-
-        // Assign all permissions to Super Admin
-        $superAdminRole->syncPermissions($permissions);
-        
-        // Assign limited permissions to Admin
-        $adminRole->syncPermissions([
-            'view_admins',
-            'create_admins',
-            'edit_admins',
-        ]);
+        // Use the new module permission service instead of hardcoded permissions
+        \App\Services\ModulePermissionService::registerModulePermissions(
+            'Core',
+            \App\Services\ModulePermissionService::getModulePermissions('Core')
+        );
     }
 }
