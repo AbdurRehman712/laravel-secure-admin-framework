@@ -1,0 +1,87 @@
+<?php
+
+namespace Modules\{{MODULE_NAME}}\Filament\Resources;
+
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Forms;
+use Filament\Schemas\Schema;
+use Modules\{{MODULE_NAME}}\Models\{{MODEL_NAME}};
+use Modules\{{MODULE_NAME}}\Filament\Resources\{{RESOURCE_NAME}}\Pages;
+
+class {{RESOURCE_NAME}} extends Resource
+{
+    protected static ?string $model = {{MODEL_NAME}}::class;
+
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static string|\UnitEnum|null $navigationGroup = '{{MODULE_NAME}}';
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_{{PERMISSION_PREFIX}}') ?? false;
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->user()?->can('view_{{PERMISSION_PREFIX}}') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_{{PERMISSION_PREFIX}}') ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->can('update_{{PERMISSION_PREFIX}}') ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->can('delete_{{PERMISSION_PREFIX}}') ?? false;
+    }    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('delete_any_{{PERMISSION_PREFIX}}') ?? false;
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema
+            ->schema([
+                {{FORM_FIELDS}}
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                {{TABLE_COLUMNS}}
+            ])            ->filters([
+                //
+            ])            ->actions([
+                EditAction::make(),
+                DeleteAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\List{{MODEL_NAME}}::route('/'),
+            'create' => Pages\Create{{MODEL_NAME}}::route('/create'),
+            'edit' => Pages\Edit{{MODEL_NAME}}::route('/{record}/edit'),
+        ];
+    }
+}

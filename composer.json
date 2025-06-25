@@ -3,7 +3,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -15,11 +18,8 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.13",
-        "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^11.5.3"
     },
     "autoload": {
@@ -27,7 +27,14 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
-            "Modules\\": "Modules/"
+            "Modules\\": "Modules/",
+            "Modules\\ModuleBuilder\\": "Modules/ModuleBuilder/app/",
+            "Modules\\Core\\": "Modules/Core/app/",
+            "Modules\\PublicUser\\": "Modules/PublicUser/app/",
+            "Modules\\TodoModule\\": "Modules/TodoModule/app/",
+            "Modules\\BlogModule\\": "Modules/BlogModule/app/",
+            "Modules\\TestModule\\": "Modules/TestModule/app/",
+            "Modules\\ShopModule\\": "Modules/ShopModule/app/"
         }
     },
     "autoload-dev": {

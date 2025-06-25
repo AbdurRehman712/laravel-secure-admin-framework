@@ -1,0 +1,12 @@
+{
+    "name": "ModuleBuilder",
+    "alias": "modulebuilder",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ModuleBuilder\\app\\Providers\\ModuleBuilderServiceProvider"
+    ],
+    "files": [],
+    "active": true
+}

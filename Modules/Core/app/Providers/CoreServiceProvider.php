@@ -3,6 +3,7 @@
 namespace Modules\Core\app\Providers;
 
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
@@ -160,6 +161,11 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function registerPermissions(): void
     {
+        // Only register permissions if the permissions table exists
+        if (!\Schema::hasTable('permissions')) {
+            return;
+        }
+        
         // Use the new module permission service instead of hardcoded permissions
         \App\Services\ModulePermissionService::registerModulePermissions(
             'Core',

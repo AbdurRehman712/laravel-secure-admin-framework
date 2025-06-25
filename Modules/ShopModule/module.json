@@ -1,0 +1,12 @@
+{
+    "name": "ShopModule",
+    "alias": "shopmodule",
+    "description": "A comprehensive e-commerce shop system with products, categories, and relationships",
+    "keywords": [],
+    "priority": 0,
+    "active": true,
+    "providers": [
+        "Modules\\ShopModule\\app\\Providers\\ShopModuleServiceProvider"
+    ],
+    "files": []
+}

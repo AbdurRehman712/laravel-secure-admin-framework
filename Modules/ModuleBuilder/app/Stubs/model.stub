@@ -1,0 +1,20 @@
+<?php
+
+namespace Modules\{{MODULE_NAME}}\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class {{MODEL_NAME}} extends Model
+{
+    {{SOFT_DELETES}}
+
+    protected $table = '{{TABLE_NAME}}';
+
+    protected $fillable = [{{FILLABLE}}
+    ];
+
+    {{CASTS}}
+
+    {{RELATIONSHIPS}}
+}

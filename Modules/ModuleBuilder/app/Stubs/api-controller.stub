@@ -1,0 +1,52 @@
+<?php
+
+namespace Modules\{{MODULE_NAME}}\app\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use {{MODEL_CLASS}};
+
+class {{CONTROLLER_NAME}} extends Controller
+{
+    public function index(): JsonResponse
+    {
+        ${{MODEL_VARIABLE}} = {{MODEL_NAME}}::paginate(15);
+        
+        return response()->json(${{MODEL_VARIABLE}});
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            // Add validation rules here
+        ]);
+
+        ${{MODEL_VARIABLE}} = {{MODEL_NAME}}::create($validated);
+
+        return response()->json(${{MODEL_VARIABLE}}, 201);
+    }
+
+    public function show({{MODEL_NAME}} ${{MODEL_VARIABLE}}): JsonResponse
+    {
+        return response()->json(${{MODEL_VARIABLE}});
+    }
+
+    public function update(Request $request, {{MODEL_NAME}} ${{MODEL_VARIABLE}}): JsonResponse
+    {
+        $validated = $request->validate([
+            // Add validation rules here
+        ]);
+
+        ${{MODEL_VARIABLE}}->update($validated);
+
+        return response()->json(${{MODEL_VARIABLE}});
+    }
+
+    public function destroy({{MODEL_NAME}} ${{MODEL_VARIABLE}}): JsonResponse
+    {
+        ${{MODEL_VARIABLE}}->delete();
+
+        return response()->json(['message' => '{{MODEL_NAME}} deleted successfully']);
+    }
+}

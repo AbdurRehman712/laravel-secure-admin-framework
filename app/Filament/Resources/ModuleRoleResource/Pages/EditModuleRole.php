@@ -41,7 +41,7 @@ class EditModuleRole extends EditRecord
         foreach ($modules as $moduleName => $permissions) {
             // A checkbox list can return false if nothing is selected.
             // We need to ensure we have an array to merge.
-            $modulePerms = $data["{$moduleName}_permissions"];
+            $modulePerms = $data["{$moduleName}_permissions"] ?? [];
             if (is_array($modulePerms)) {
                 $allPermissions = array_merge($allPermissions, $modulePerms);
             }

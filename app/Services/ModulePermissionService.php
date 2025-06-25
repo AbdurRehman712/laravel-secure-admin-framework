@@ -37,7 +37,12 @@ class ModulePermissionService
             
             foreach ($moduleDirs as $moduleDir) {
                 $moduleName = basename($moduleDir);
-                $modules[$moduleName] = self::getModulePermissions($moduleName);
+                $modulePermissions = self::getModulePermissions($moduleName);
+                
+                // Only include modules that have permissions
+                if (!empty($modulePermissions)) {
+                    $modules[$moduleName] = $modulePermissions;
+                }
             }
         }
         
@@ -56,25 +61,32 @@ class ModulePermissionService
     public static function getModulePermissions(string $moduleName): array
     {
         $permissions = [];
-        $resourcesPath = base_path("Modules/{$moduleName}/app/Filament/Resources");
         
-        if (!File::exists($resourcesPath)) {
-            return $permissions;
-        }
+        // Check both possible resource paths
+        $resourcePaths = [
+            base_path("Modules/{$moduleName}/app/Filament/Resources"),
+            base_path("Modules/{$moduleName}/Filament/Resources")
+        ];
+        
+        foreach ($resourcePaths as $resourcesPath) {
+            if (!File::exists($resourcesPath)) {
+                continue;
+            }
 
-        $resourceFiles = File::glob($resourcesPath . '/*Resource.php');
-        
-        foreach ($resourceFiles as $resourceFile) {
-            $resourceName = basename($resourceFile, '.php');
-            $resourceKey = Str::snake(str_replace('Resource', '', $resourceName));
+            $resourceFiles = File::glob($resourcesPath . '/*Resource.php');
             
-            foreach (self::DEFAULT_PERMISSIONS as $action) {
-                $permissions[] = [
-                    'name' => "{$action}_{$resourceKey}",
-                    'display_name' => ucwords(str_replace('_', ' ', "{$action} {$resourceKey}")),
-                    'resource' => $resourceName,
-                    'action' => $action,
-                ];
+            foreach ($resourceFiles as $resourceFile) {
+                $resourceName = basename($resourceFile, '.php');
+                $resourceKey = Str::snake(str_replace('Resource', '', $resourceName));
+                
+                foreach (self::DEFAULT_PERMISSIONS as $action) {
+                    $permissions[] = [
+                        'name' => "{$action}_{$resourceKey}",
+                        'display_name' => ucwords(str_replace('_', ' ', "{$action} {$resourceKey}")),
+                        'resource' => $resourceName,
+                        'action' => $action,
+                    ];
+                }
             }
         }
 

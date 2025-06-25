@@ -1,0 +1,77 @@
+<?php
+
+namespace {{namespace}}\app\Http\Controllers\Api;
+
+use {{namespace}}\app\Models\{{modelName}};
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+
+class {{controllerName}} extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = {{modelName}}::query();
+
+        // Add search functionality
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        // Add pagination
+        $perPage = $request->get('per_page', 15);
+        $data = $query->paginate($perPage);
+
+        return response()->json($data);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validatedData = $request->validate([
+            // Add your validation rules here
+        ]);
+
+        $item = {{modelName}}::create($validatedData);
+
+        return response()->json($item, 201);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show({{modelName}} $item): JsonResponse
+    {
+        return response()->json($item);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, {{modelName}} $item): JsonResponse
+    {
+        $validatedData = $request->validate([
+            // Add your validation rules here
+        ]);
+
+        $item->update($validatedData);
+
+        return response()->json($item);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy({{modelName}} $item): JsonResponse
+    {
+        $item->delete();
+
+        return response()->json(['message' => 'Resource deleted successfully']);
+    }
+}

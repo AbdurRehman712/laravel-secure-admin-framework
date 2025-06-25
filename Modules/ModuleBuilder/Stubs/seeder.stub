@@ -1,0 +1,23 @@
+<?php
+
+namespace {{namespace}}\database\seeders;
+
+use Illuminate\Database\Seeder;
+use {{namespace}}\app\Models\{{modelName}};
+
+class {{seederName}} extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        {{modelName}}::create([
+            'name' => 'Sample {{modelName}}',
+            // Add more sample data as needed
+        ]);
+
+        // You can also use factories if available
+        // {{modelName}}::factory(10)->create();
+    }
+}
