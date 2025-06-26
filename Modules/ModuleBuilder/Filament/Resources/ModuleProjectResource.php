@@ -12,16 +12,21 @@ use Illuminate\Database\Eloquent\Collection;
 use Modules\ModuleBuilder\Models\ModuleProject;
 use Modules\ModuleBuilder\Filament\Resources\ModuleProjectResource\Pages;
 use Modules\ModuleBuilder\Filament\Resources\ModuleProjectResource\RelationManagers;
+use App\Filament\Concerns\HasModulePermissions;
 
 class ModuleProjectResource extends Resource
 {
+    use HasModulePermissions;
+
     protected static ?string $model = ModuleProject::class;
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-cube';
     
-    protected static ?string $navigationLabel = 'Module Builder';
+    protected static ?string $navigationLabel = 'Projects';
     
-    // protected static ?string $navigationGroup = 'Development';
+    protected static \UnitEnum|string|null $navigationGroup = 'Module Builder';
+    
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {
@@ -152,5 +157,36 @@ class ModuleProjectResource extends Resource
             'create' => Pages\CreateModuleProject::route('/create'),
             'edit' => Pages\EditModuleProject::route('/{record}/edit'),
         ];
+    }
+
+    // Authorization methods for permission checking
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_module_project') ?? false;
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->user()?->can('view_module_project') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_module_project') ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->can('update_module_project') ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->can('delete_module_project') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('delete_any_module_project') ?? false;
     }
 }

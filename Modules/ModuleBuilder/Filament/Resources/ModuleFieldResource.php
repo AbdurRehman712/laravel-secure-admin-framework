@@ -9,9 +9,12 @@ use Filament\Tables\Table;
 use Filament\Schemas\Schema;
 use Modules\ModuleBuilder\Models\ModuleField;
 use Modules\ModuleBuilder\Filament\Resources\ModuleFieldResource\Pages;
+use App\Filament\Concerns\HasModulePermissions;
 
 class ModuleFieldResource extends Resource
 {
+    use HasModulePermissions;
+
     protected static ?string $model = ModuleField::class;
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-variable';
@@ -21,6 +24,37 @@ class ModuleFieldResource extends Resource
     protected static \UnitEnum|string|null $navigationGroup = 'Module Builder';
 
     protected static ?int $navigationSort = 3;
+
+    // Authorization methods for permission checking
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_module_field') ?? false;
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->user()?->can('view_module_field') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_module_field') ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->can('update_module_field') ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->can('delete_module_field') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('delete_any_module_field') ?? false;
+    }
 
     public static function form(Schema $schema): Schema
     {

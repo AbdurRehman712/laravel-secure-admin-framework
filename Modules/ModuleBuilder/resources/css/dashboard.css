@@ -1,0 +1,36 @@
+/* Module Builder Dashboard Custom Styles */
+.module-builder-dashboard {
+    /* Ensure common Tailwind classes are available */
+}
+
+/* Custom button styles for dashboard */
+.dashboard-button {
+    @apply flex flex-col items-center justify-center p-4 rounded-lg transition-colors;
+}
+
+.dashboard-button:hover {
+    @apply opacity-80;
+}
+
+/* Icon container */
+.icon-container {
+    @apply flex h-12 w-12 items-center justify-center rounded-full mb-3;
+}
+
+/* Feature grid */
+.feature-grid {
+    @apply grid gap-6;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+@media (min-width: 768px) {
+    .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .feature-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}

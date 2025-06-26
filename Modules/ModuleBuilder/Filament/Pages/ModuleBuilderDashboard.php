@@ -12,9 +12,15 @@ class ModuleBuilderDashboard extends Page
 {
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-wrench-screwdriver';
     protected string $view = 'module-builder::pages.module-builder-dashboard';
-    protected static ?string $navigationLabel = 'Module Builder Pro';
-    protected static ?string $title = 'Module Builder Pro';
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Dashboard';
+    protected static ?string $title = 'Module Builder Dashboard';
+    protected static \UnitEnum|string|null $navigationGroup = 'Module Builder';
+    protected static ?int $navigationSort = 0;
+
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('view_any_module_project') ?? false;
+    }
 
     public function mount(): void
     {
@@ -28,7 +34,7 @@ class ModuleBuilderDashboard extends Page
                 ->label('New Module Project')
                 ->icon('heroicon-o-plus')
                 ->color('primary')
-                ->url('/admin/unified-module-builder/create'),
+                ->url('/admin/module-projects/create'),
                 
             Action::make('quick_start_guide')
                 ->label('Quick Start Guide')
@@ -40,16 +46,6 @@ class ModuleBuilderDashboard extends Page
         ];
     }
 
-    public function getViewData(): array
-    {
-        return [
-            'recentModules' => ModuleProject::latest()->limit(5)->get(),
-            'totalModules' => ModuleProject::count(),
-            'activeModules' => ModuleProject::where('enabled', true)->count(),
-            'stats' => $this->getStats(),
-        ];
-    }
-
     protected function getStats(): array
     {
         return [
@@ -57,6 +53,17 @@ class ModuleBuilderDashboard extends Page
             'active_modules' => ModuleProject::where('enabled', true)->count(),
             'tables' => \Modules\ModuleBuilder\Models\ModuleTable::count(),
             'fields' => \Modules\ModuleBuilder\Models\ModuleField::count(),
+        ];
+    }
+
+    protected function getViewData(): array
+    {
+        $stats = $this->getStats();
+        return [
+            'recentModules' => ModuleProject::latest()->limit(5)->get(),
+            'totalModules' => ModuleProject::count(),
+            'activeModules' => ModuleProject::where('enabled', true)->count(),
+            'stats' => $stats,
         ];
     }
 }

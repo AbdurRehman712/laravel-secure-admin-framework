@@ -9,9 +9,12 @@ use Filament\Tables\Table;
 use Filament\Schemas\Schema;
 use Modules\ModuleBuilder\Models\ModuleTable;
 use Modules\ModuleBuilder\Filament\Resources\ModuleTableResource\Pages;
+use App\Filament\Concerns\HasModulePermissions;
 
 class ModuleTableResource extends Resource
 {
+    use HasModulePermissions;
+
     protected static ?string $model = ModuleTable::class;
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-table-cells';
@@ -21,6 +24,37 @@ class ModuleTableResource extends Resource
     protected static \UnitEnum|string|null $navigationGroup = 'Module Builder';
 
     protected static ?int $navigationSort = 2;
+
+    // Authorization methods for permission checking
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_module_table') ?? false;
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->user()?->can('view_module_table') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_module_table') ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->can('update_module_table') ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->can('delete_module_table') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('delete_any_module_table') ?? false;
+    }
 
     public static function form(Schema $schema): Schema
     {

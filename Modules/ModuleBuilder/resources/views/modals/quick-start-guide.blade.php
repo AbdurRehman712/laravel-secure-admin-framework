@@ -2,9 +2,7 @@
     <!-- Header -->
     <div class="text-center mb-6">
         <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/50 mb-4">
-            <svg class="h-6 w-6 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
+            <x-filament::icon icon="heroicon-o-bolt" class="h-6 w-6 text-primary-600 dark:text-primary-400" />
         </div>
         <h3 class="text-lg font-medium text-gray-900 dark:text-white">
             Welcome to Module Builder Pro
@@ -78,39 +76,27 @@
         <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-3">Key Features</h4>
         <div class="grid grid-cols-2 gap-3">
             <div class="flex items-center space-x-2">
-                <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
+                <x-filament::icon icon="heroicon-o-check-circle" class="h-4 w-4 text-success-500" />
                 <span class="text-sm text-gray-600 dark:text-gray-300">Visual Schema Builder</span>
             </div>
             <div class="flex items-center space-x-2">
-                <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
+                <x-filament::icon icon="heroicon-o-check-circle" class="h-4 w-4 text-success-500" />
                 <span class="text-sm text-gray-600 dark:text-gray-300">Auto Code Generation</span>
             </div>
             <div class="flex items-center space-x-2">
-                <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
+                <x-filament::icon icon="heroicon-o-check-circle" class="h-4 w-4 text-success-500" />
                 <span class="text-sm text-gray-600 dark:text-gray-300">API Generation</span>
             </div>
             <div class="flex items-center space-x-2">
-                <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
+                <x-filament::icon icon="heroicon-o-check-circle" class="h-4 w-4 text-success-500" />
                 <span class="text-sm text-gray-600 dark:text-gray-300">Relationship Builder</span>
             </div>
             <div class="flex items-center space-x-2">
-                <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
+                <x-filament::icon icon="heroicon-o-check-circle" class="h-4 w-4 text-success-500" />
                 <span class="text-sm text-gray-600 dark:text-gray-300">One-Click Deploy</span>
             </div>
             <div class="flex items-center space-x-2">
-                <svg class="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                </svg>
+                <x-filament::icon icon="heroicon-o-check-circle" class="h-4 w-4 text-success-500" />
                 <span class="text-sm text-gray-600 dark:text-gray-300">Module Management</span>
             </div>
         </div>
@@ -123,17 +109,12 @@
                 Ready to build your first module?
             </p>
             <div class="flex justify-center space-x-3">
-                <a href="/admin/unified-module-builder/create" 
-                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                    <svg class="mr-2 -ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
+                <x-filament::button href="/admin/module-projects/create" tag="a" icon="heroicon-o-plus">
                     Create New Module
-                </a>
-                <a href="/admin/unified-module-builder" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                </x-filament::button>
+                <x-filament::button href="/admin/module-projects" tag="a" color="gray">
                     Browse Modules
-                </a>
+                </x-filament::button>
             </div>
         </div>
     </div>
