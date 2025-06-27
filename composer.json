@@ -30,11 +30,7 @@
             "Modules\\": "Modules/",
             "Modules\\ModuleBuilder\\": "Modules/ModuleBuilder/app/",
             "Modules\\Core\\": "Modules/Core/app/",
-            "Modules\\PublicUser\\": "Modules/PublicUser/app/",
-            "Modules\\TodoModule\\": "Modules/TodoModule/app/",
-            "Modules\\BlogModule\\": "Modules/BlogModule/app/",
-            "Modules\\TestModule\\": "Modules/TestModule/app/",
-            "Modules\\ShopModule\\": "Modules/ShopModule/app/"
+            "Modules\\PublicUser\\": "Modules/PublicUser/app/"
         }
     },
     "autoload-dev": {

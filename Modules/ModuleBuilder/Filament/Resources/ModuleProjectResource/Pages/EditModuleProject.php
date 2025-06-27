@@ -15,6 +15,20 @@ class EditModuleProject extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('runMigrations')
+                ->label('Run Migrations')
+                ->icon('heroicon-o-arrow-up-on-square-stack')
+                ->color('info')
+                ->action(function () {
+                    $moduleName = str_replace(' ', '', $this->record->name);
+                    $output = \Artisan::call('module:migrate', ['module' => $moduleName]);
+                    Notification::make()
+                        ->title('Migrations executed!')
+                        ->body('Migrations for the module were run via Artisan.')
+                        ->success()
+                        ->send();
+                    $this->redirect(static::getUrl(['record' => $this->record]));
+                }),
             Actions\Action::make('build')
                 ->label('Build Module')
                 ->icon('heroicon-o-cog-6-tooth')
@@ -84,11 +98,50 @@ class EditModuleProject extends EditRecord
                     ->visible(fn () => $this->record->status === 'built')
                     ->action(function () {
                         $generator = new \Modules\ModuleBuilder\Services\ModuleGeneratorService($this->record);
-                        $zipPath = $generator->exportModule();
-                        
-                        return response()->download($zipPath, "{$this->record->slug}.zip");
-                    }),
-                
+                    $zipPath = $generator->exportModule();
+                    
+                    return response()->download($zipPath, "{$this->record->slug}.zip");
+                }),
+            Actions\Action::make('artisanEnable')
+                ->label('Enable')
+                ->icon('heroicon-o-play')
+                ->color('primary')
+                ->visible(fn () => !$this->record->enabled)
+                ->action(function () {
+                    $moduleName = str_replace(' ', '', $this->record->name);
+                    \Artisan::call('module:enable', ['module' => $moduleName]);
+                    // Sync state after enabling
+                    $statusesPath = base_path('modules_statuses.json');
+                    $statuses = file_exists($statusesPath) ? json_decode(file_get_contents($statusesPath), true) : [];
+                    $statuses[$moduleName] = true;
+                    file_put_contents($statusesPath, json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                    Notification::make()
+                        ->title('Module enabled!')
+                        ->body('The module was enabled and state synced.')
+                        ->success()
+                        ->send();
+                    $this->redirect(static::getUrl(['record' => $this->record]));
+                }),
+            Actions\Action::make('artisanDisable')
+                ->label('Disable')
+                ->icon('heroicon-o-pause')
+                ->color('danger')
+                ->visible(fn () => $this->record->enabled)
+                ->action(function () {
+                    $moduleName = str_replace(' ', '', $this->record->name);
+                    \Artisan::call('module:disable', ['module' => $moduleName]);
+                    // Sync state after disabling
+                    $statusesPath = base_path('modules_statuses.json');
+                    $statuses = file_exists($statusesPath) ? json_decode(file_get_contents($statusesPath), true) : [];
+                    $statuses[$moduleName] = false;
+                    file_put_contents($statusesPath, json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                    Notification::make()
+                        ->title('Module disabled!')
+                        ->body('The module was disabled and state synced.')
+                        ->success()
+                        ->send();
+                    $this->redirect(static::getUrl(['record' => $this->record]));
+                }),
             Actions\DeleteAction::make()
                 ->before(function () {
                     // Clean up generated module files when deleting project

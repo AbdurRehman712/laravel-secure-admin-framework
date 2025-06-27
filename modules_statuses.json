@@ -1,6 +1,5 @@
 {
     "Core": true,
     "PublicUser": true,
-    "ModuleBuilder": true,
-    "ShopModule": true
+    "ModuleBuilder": true
 }
