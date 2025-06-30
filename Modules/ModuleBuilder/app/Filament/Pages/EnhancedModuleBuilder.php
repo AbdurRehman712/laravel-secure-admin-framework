@@ -6,6 +6,7 @@ use Filament\Pages\Page;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 
@@ -61,7 +62,9 @@ class EnhancedModuleBuilder extends Page
 
     public function form(Schema $schema): Schema
     {
-        return $schema->schema([
+        return $schema
+            ->columns(2)
+            ->schema([
             TextInput::make('module_name')
                 ->label('Module Name')
                 ->required()
@@ -69,21 +72,26 @@ class EnhancedModuleBuilder extends Page
                 ->live()
                 ->afterStateUpdated(fn ($state, callable $set) =>
                     $set('module_slug', Str::slug($state))
-                ),
+                )
+                ->columnSpan(1),
 
             TextInput::make('module_slug')
                 ->label('Module Slug')
                 ->disabled()
-                ->dehydrated(),
+                ->dehydrated()
+                ->columnSpan(1),
 
             Textarea::make('description')
                 ->label('Description')
                 ->placeholder('Brief description of what this module does')
-                ->rows(2),
+                ->rows(2)
+                ->columnSpan('full'),
 
-            $this->getModelsRepeater(),
+            $this->getModelsRepeater()
+                ->columnSpan('full'),
 
-            $this->getRelationshipsRepeater(),
+            $this->getRelationshipsRepeater()
+                ->columnSpan('full'),
 
             Toggle::make('generate_factory')
                 ->label('Generate Model Factories')
@@ -114,6 +122,7 @@ class EnhancedModuleBuilder extends Page
     {
         return Repeater::make('models')
             ->label('Models & Tables')
+            ->columns(2)
             ->schema([
                 TextInput::make('name')
                     ->label('Model Name')
@@ -122,20 +131,24 @@ class EnhancedModuleBuilder extends Page
                     ->live()
                     ->afterStateUpdated(function ($state, callable $set) {
                         $set('table_name', Str::plural(Str::snake($state)));
-                    }),
+                    })
+                    ->columnSpan(1),
 
                 TextInput::make('table_name')
                     ->label('Table Name')
                     ->required()
                     ->disabled()
-                    ->dehydrated(),
+                    ->dehydrated()
+                    ->columnSpan(1),
 
                 Textarea::make('description')
                     ->label('Model Description')
                     ->placeholder('What this model represents')
-                    ->rows(2),
+                    ->rows(2)
+                    ->columnSpan('full'),
 
-                $this->getFieldsRepeater(),
+                $this->getFieldsRepeater()
+                    ->columnSpan('full'),
             ])
             ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
             ->addActionLabel('Add Model')
@@ -158,27 +171,31 @@ class EnhancedModuleBuilder extends Page
                     ->label('Field Type')
                     ->required()
                     ->options([
-                        'string' => 'String (Text)',
-                        'text' => 'Text (Long Text)',
-                        'integer' => 'Integer (Number)',
-                        'decimal' => 'Decimal (Money/Float)',
-                        'boolean' => 'Boolean (Yes/No)',
+                        'string' => 'String',
+                        'text' => 'Text',
+                        'integer' => 'Integer',
+                        'decimal' => 'Decimal',
+                        'boolean' => 'Boolean',
                         'date' => 'Date',
-                        'datetime' => 'Date & Time',
+                        'datetime' => 'DateTime',
                         'timestamp' => 'Timestamp',
                         'json' => 'JSON',
-                        'enum' => 'Enum (Select Options)',
-                        'file' => 'File Upload',
-                        'image' => 'Image Upload',
-                        'rich_text' => 'Rich Text Editor',
+                        'enum' => 'Enum',
+                        'file' => 'File',
+                        'image' => 'Image',
+                        'rich_text' => 'Rich Text',
                         'email' => 'Email',
                         'url' => 'URL',
                         'password' => 'Password',
                     ])
                     ->live(),
 
-                Toggle::make('required')
+                Select::make('required')
                     ->label('Required')
+                    ->options([
+                        true => 'Yes',
+                        false => 'No',
+                    ])
                     ->default(false),
 
                 TextInput::make('length')
@@ -192,22 +209,26 @@ class EnhancedModuleBuilder extends Page
                     ->placeholder('Default value for this field'),
 
                 Textarea::make('enum_options')
-                    ->label('Enum Options (one per line)')
+                    ->label('Enum Options')
                     ->visible(fn ($get) => $get('type') === 'enum')
                     ->placeholder("active\ninactive\npending")
-                    ->rows(3),
+                    ->rows(2),
 
                 TextInput::make('validation')
-                    ->label('Validation Rules')
-                    ->placeholder('e.g., min:3|max:255|unique:table,column')
-                    ->helperText('Laravel validation rules'),
+                    ->label('Validation')
+                    ->placeholder('e.g., min:3|max:255'),
             ])
-            ->itemLabel(fn (array $state): ?string =>
-                ($state['name'] ?? 'Field') . ' (' . ($state['type'] ?? 'unknown') . ')'
-            )
+            ->table([
+                TableColumn::make('name')
+                    ->markAsRequired(),
+                TableColumn::make('type')
+                    ->markAsRequired(),
+                TableColumn::make('required'),
+                TableColumn::make('length'),
+                TableColumn::make('default'),
+            ])
             ->addActionLabel('Add Field')
             ->reorderableWithButtons()
-            ->collapsible()
             ->defaultItems(1);
     }
 
@@ -239,17 +260,19 @@ class EnhancedModuleBuilder extends Page
                     ->label('Relationship Type')
                     ->required()
                     ->options([
-                        'belongsTo' => 'Belongs To (Many to One)',
-                        'hasMany' => 'Has Many (One to Many)',
-                        'hasOne' => 'Has One (One to One)',
-                        'belongsToMany' => 'Belongs To Many (Many to Many)',
+                        'belongsTo' => 'belongsTo',
+                        'hasMany' => 'hasMany',
+                        'hasOne' => 'hasOne',
+                        'belongsToMany' => 'belongsToMany',
                     ])
                     ->live(),
 
                 TextInput::make('foreign_key')
                     ->label('Foreign Key')
-                    ->placeholder('Auto-generated if empty')
-                    ->helperText('e.g., user_id, category_id'),
+                    ->placeholder('Auto-generated if empty'),
+
+                TextInput::make('relationship_name')
+                    ->placeholder('Method name'),
 
                 TextInput::make('local_key')
                     ->label('Local Key')
@@ -257,23 +280,22 @@ class EnhancedModuleBuilder extends Page
                     ->visible(fn ($get) => in_array($get('type'), ['hasMany', 'hasOne'])),
 
                 TextInput::make('pivot_table')
-                    ->label('Pivot Table Name')
+                    ->label('Pivot Table')
                     ->visible(fn ($get) => $get('type') === 'belongsToMany')
-                    ->placeholder('Auto-generated if empty')
-                    ->helperText('e.g., product_categories'),
-
-                TextInput::make('relationship_name')
-                    ->label('Relationship Method Name')
-                    ->placeholder('Auto-generated if empty')
-                    ->helperText('Method name in the model'),
+                    ->placeholder('Auto-generated if empty'),
             ])
-            ->itemLabel(fn (array $state): ?string =>
-                ($state['from_model'] ?? 'Model') . ' → ' . ($state['to_model'] ?? 'Model') .
-                ' (' . ($state['type'] ?? 'relationship') . ')'
-            )
+            ->table([
+                TableColumn::make('from_model')
+                    ->markAsRequired(),
+                TableColumn::make('to_model')
+                    ->markAsRequired(),
+                TableColumn::make('type')
+                    ->markAsRequired(),
+                TableColumn::make('foreign_key'),
+                TableColumn::make('relationship_name'),
+            ])
             ->addActionLabel('Add Relationship')
-            ->reorderableWithButtons()
-            ->collapsible();
+            ->reorderableWithButtons();
     }
 
 
