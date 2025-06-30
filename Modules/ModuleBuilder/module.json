@@ -1,0 +1,11 @@
+{
+    "name": "ModuleBuilder",
+    "alias": "modulebuilder",
+    "description": "Advanced Module Builder for rapid development - similar to October CMS Plugin Builder and Tailor",
+    "keywords": ["module", "builder", "generator", "development", "rapid"],
+    "priority": 10,
+    "providers": [
+        "Modules\\ModuleBuilder\\app\\Providers\\ModuleBuilderServiceProvider"
+    ],
+    "files": []
+}
