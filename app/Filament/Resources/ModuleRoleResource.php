@@ -120,30 +120,35 @@ class ModuleRoleResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
-                    ->sortable(),
-                    
+                    ->sortable()
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->label('Role Name'),
-                    
+                    ->label('Role Name')
+                    ->toggleable(),
+
                 Tables\Columns\BadgeColumn::make('guard_name')
                     ->label('Guard')
                     ->colors([
                         'primary' => 'admin',
                         'success' => 'web',
-                    ]),
-                    
+                    ])
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('permissions_count')
                     ->counts('permissions')
                     ->label('Permissions')
                     ->badge()
-                    ->color('warning'),
-                    
+                    ->color('warning')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),            ])
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
             ->filters([
                 Tables\Filters\SelectFilter::make('guard_name')
                     ->label('Guard')

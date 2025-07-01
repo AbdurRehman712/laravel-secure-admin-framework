@@ -1,5 +1,6 @@
 {
     "Core": true,
     "PublicUser": true,
-    "Shop": false
+    "Shop": true,
+    "Shops": true
 }

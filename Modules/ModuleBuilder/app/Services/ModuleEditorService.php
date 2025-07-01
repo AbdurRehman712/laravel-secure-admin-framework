@@ -479,6 +479,13 @@ use Filament\\Schemas\\Schema;
 use Filament\\Tables\\Table;
 use Filament\\Tables\\Columns\\TextColumn;
 use Filament\\Tables\\Columns\\BooleanColumn;
+use Filament\\Actions\\Action;
+use Filament\\Actions\\BulkAction;
+use Filament\\Actions\\ActionGroup;
+use Filament\\Actions\\BulkActionGroup;
+use Filament\\Actions\\EditAction;
+use Filament\\Actions\\DeleteAction;
+use Filament\\Actions\\ViewAction;
 use Filament\\Forms\\Components\\TextInput;
 use Filament\\Forms\\Components\\Textarea;
 use Filament\\Forms\\Components\\Select;
@@ -506,9 +513,70 @@ class {$resourceName} extends Resource
     {
         return \$table
             ->columns([
-                TextColumn::make('id')->sortable(),
+                TextColumn::make('id')->sortable()->toggleable(),
                 {$tableColumns}
-            ]);
+            ])
+            ->filters([
+                //
+            ])
+            ->recordActions([
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('delete')
+                        ->requiresConfirmation()
+                        ->action(fn (\\Illuminate\\Database\\Eloquent\\Collection \$records) => \$records->each->delete()),
+                    BulkAction::make('export')
+                        ->action(function (\\Illuminate\\Database\\Eloquent\\Collection \$records) {
+                            // Simple CSV export functionality
+                            \$filename = '{$modelName}_export_' . now()->format('Y_m_d_H_i_s') . '.csv';
+                            \$headers = [
+                                'Content-Type' => 'text/csv',
+                                'Content-Disposition' => 'attachment; filename=\"' . \$filename . '\"',
+                            ];
+
+                            \$callback = function() use (\$records) {
+                                \$file = fopen('php://output', 'w');
+
+                                // Add CSV headers
+                                if (\$records->isNotEmpty()) {
+                                    \$firstRecord = \$records->first();
+                                    \$headers = [];
+                                    foreach (\$firstRecord->toArray() as \$key => \$value) {
+                                        \$headers[] = \$key;
+                                    }
+                                    fputcsv(\$file, \$headers);
+                                }
+
+                                // Add data rows
+                                foreach (\$records as \$record) {
+                                    \$row = [];
+                                    foreach (\$record->toArray() as \$key => \$value) {
+                                        // Handle array/object values (like relationships)
+                                        if (is_array(\$value) || is_object(\$value)) {
+                                            \$row[] = is_array(\$value) ? implode(', ', \$value) : (string) \$value;
+                                        } else {
+                                            \$row[] = \$value;
+                                        }
+                                    }
+                                    fputcsv(\$file, \$row);
+                                }
+
+                                fclose(\$file);
+                            };
+
+                            return response()->stream(\$callback, 200, \$headers);
+                        }),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->striped()
+            ->paginated([10, 25, 50, 100]);
     }
 
     public static function getPages(): array
@@ -635,34 +703,35 @@ class {$resourceName} extends Resource
             
             switch ($fieldType) {
                 case 'boolean':
-                    $columns[] = "BooleanColumn::make('{$fieldName}')";
+                    $columns[] = "BooleanColumn::make('{$fieldName}')->toggleable()";
                     break;
                 case 'decimal':
-                    $columns[] = "TextColumn::make('{$fieldName}')->money('USD')->sortable()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->money('USD')->sortable()->toggleable()";
                     break;
                 case 'email':
-                    $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()->toggleable()";
                     break;
                 case 'enum':
-                    $columns[] = "TextColumn::make('{$fieldName}')->badge()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->badge()->toggleable()";
                     break;
                 case 'date':
                 case 'datetime':
-                    $columns[] = "TextColumn::make('{$fieldName}')->dateTime()->sortable()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->dateTime()->sortable()->toggleable()";
                     break;
                 default:
                     if (in_array($fieldName, ['name', 'title', 'slug', 'sku', 'email'])) {
-                        $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()";
+                        $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()->toggleable()";
                     } else {
-                        $columns[] = "TextColumn::make('{$fieldName}')->sortable()";
+                        $columns[] = "TextColumn::make('{$fieldName}')->sortable()->toggleable()";
                     }
                     break;
             }
         }
         
-        // Add created_at
-        $columns[] = "TextColumn::make('created_at')->dateTime()->sortable()";
-        
+        // Add timestamps
+        $columns[] = "TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true)";
+        $columns[] = "TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true)";
+
         return implode(",\n                ", $columns);
     }
 
@@ -678,7 +747,7 @@ class {$resourceName} extends Resource
 namespace Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName}\\Pages;
 
 use Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName};
-use Filament\\Actions;
+use Filament\\Actions\\CreateAction;
 use Filament\\Resources\\Pages\\ListRecords;
 
 class List{$pluralName} extends ListRecords
@@ -688,7 +757,9 @@ class List{$pluralName} extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\\CreateAction::make(),
+            CreateAction::make()
+                ->icon('heroicon-o-plus')
+                ->color('primary'),
         ];
     }
 }";
@@ -714,7 +785,7 @@ class Create{$modelName} extends CreateRecord
 namespace Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName}\\Pages;
 
 use Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName};
-use Filament\\Actions;
+use Filament\\Actions\\DeleteAction;
 use Filament\\Resources\\Pages\\EditRecord;
 
 class Edit{$modelName} extends EditRecord
@@ -724,7 +795,7 @@ class Edit{$modelName} extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 }";

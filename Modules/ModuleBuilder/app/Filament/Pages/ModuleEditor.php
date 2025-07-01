@@ -12,8 +12,10 @@ use Filament\Forms\Components\Toggle;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 use Modules\ModuleBuilder\app\Services\ModuleEditorService;
+use Modules\ModuleBuilder\app\Services\SeederExecutionService;
 
 class ModuleEditor extends Page
 {
@@ -438,5 +440,100 @@ class ModuleEditor extends Page
         ]);
         $this->selectedModule = null;
         $this->moduleData = null;
+    }
+
+    public function hasModuleSeeders(): bool
+    {
+        if (!$this->selectedModule) {
+            return false;
+        }
+
+        $seedersPath = base_path("Modules/{$this->selectedModule}/database/seeders");
+        if (!File::exists($seedersPath)) {
+            return false;
+        }
+
+        $seederFiles = File::glob($seedersPath . '/*Seeder.php');
+        return count($seederFiles) > 0;
+    }
+
+    public function hasModuleFactories(): bool
+    {
+        if (!$this->selectedModule) {
+            return false;
+        }
+
+        $factoriesPath = base_path("Modules/{$this->selectedModule}/database/factories");
+        if (!File::exists($factoriesPath)) {
+            return false;
+        }
+
+        $factoryFiles = File::glob($factoriesPath . '/*Factory.php');
+        return count($factoryFiles) > 0;
+    }
+
+    public function runModuleSeeders(): void
+    {
+        if (!$this->selectedModule) {
+            return;
+        }
+
+        try {
+            $seederService = new SeederExecutionService();
+            $results = $seederService->executeModuleSeeders($this->selectedModule);
+
+            $successCount = count(array_filter($results, fn($r) => $r['status'] === 'success'));
+            $totalRecords = array_sum(array_column($results, 'records_created'));
+
+            if ($successCount > 0) {
+                Notification::make()
+                    ->title('Seeders Executed Successfully!')
+                    ->body("Executed {$successCount} seeders and created {$totalRecords} records for '{$this->selectedModule}' module.")
+                    ->success()
+                    ->send();
+            } else {
+                throw new \Exception('No seeders were executed successfully');
+            }
+
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Seeder Execution Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function createTestData(): void
+    {
+        if (!$this->selectedModule) {
+            return;
+        }
+
+        try {
+            $seederService = new SeederExecutionService();
+            $models = $seederService->getModelsWithFactories($this->selectedModule);
+            $totalRecords = 0;
+
+            foreach ($models as $modelName) {
+                $result = $seederService->executeModelFactory($this->selectedModule, $modelName, 10);
+                if ($result['status'] === 'success') {
+                    $totalRecords += $result['records_created'];
+                }
+            }
+
+            Notification::make()
+                ->title('Test Data Created Successfully!')
+                ->body("Created {$totalRecords} test records for '{$this->selectedModule}' module.")
+                ->success()
+                ->send();
+
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Test Data Creation Failed')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
     }
 }

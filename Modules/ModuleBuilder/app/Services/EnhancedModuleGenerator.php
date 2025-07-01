@@ -5,6 +5,7 @@ namespace Modules\ModuleBuilder\app\Services;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Artisan;
+use Modules\ModuleBuilder\app\Services\ModuleStatusService;
 
 class EnhancedModuleGenerator
 {
@@ -538,6 +539,13 @@ use Filament\\Schemas\\Schema;
 use Filament\\Tables\\Table;
 use Filament\\Tables\\Columns\\TextColumn;
 use Filament\\Tables\\Columns\\BooleanColumn;
+use Filament\\Actions\\Action;
+use Filament\\Actions\\BulkAction;
+use Filament\\Actions\\ActionGroup;
+use Filament\\Actions\\BulkActionGroup;
+use Filament\\Actions\\EditAction;
+use Filament\\Actions\\DeleteAction;
+use Filament\\Actions\\ViewAction;
 use Filament\\Forms\\Components\\TextInput;
 use Filament\\Forms\\Components\\Textarea;
 use Filament\\Forms\\Components\\Select;
@@ -555,6 +563,36 @@ class {$resourceName} extends Resource
 
     protected static \\UnitEnum|string|null \$navigationGroup = '{$this->moduleName}';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('view_any_" . Str::snake($modelName) . "') ?? false;
+    }
+
+    public static function canView(\$record): bool
+    {
+        return auth()->user()?->can('view_" . Str::snake($modelName) . "') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('create_" . Str::snake($modelName) . "') ?? false;
+    }
+
+    public static function canEdit(\$record): bool
+    {
+        return auth()->user()?->can('update_" . Str::snake($modelName) . "') ?? false;
+    }
+
+    public static function canDelete(\$record): bool
+    {
+        return auth()->user()?->can('delete_" . Str::snake($modelName) . "') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
     public static function form(Schema \$schema): Schema
     {
         return \$schema->schema([
@@ -566,9 +604,70 @@ class {$resourceName} extends Resource
     {
         return \$table
             ->columns([
-                TextColumn::make('id')->sortable(),
+                TextColumn::make('id')->sortable()->toggleable(),
                 " . $this->generateTableColumns($modelData) . "
-            ]);
+            ])
+            ->filters([
+                //
+            ])
+            ->recordActions([
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('delete')
+                        ->requiresConfirmation()
+                        ->action(fn (\\Illuminate\\Database\\Eloquent\\Collection \$records) => \$records->each->delete()),
+                    BulkAction::make('export')
+                        ->action(function (\\Illuminate\\Database\\Eloquent\\Collection \$records) {
+                            // Simple CSV export functionality
+                            \$filename = '" . Str::snake($modelName) . "_export_' . now()->format('Y_m_d_H_i_s') . '.csv';
+                            \$headers = [
+                                'Content-Type' => 'text/csv',
+                                'Content-Disposition' => 'attachment; filename=\"' . \$filename . '\"',
+                            ];
+
+                            \$callback = function() use (\$records) {
+                                \$file = fopen('php://output', 'w');
+
+                                // Add CSV headers
+                                if (\$records->isNotEmpty()) {
+                                    \$firstRecord = \$records->first();
+                                    \$headers = [];
+                                    foreach (\$firstRecord->toArray() as \$key => \$value) {
+                                        \$headers[] = \$key;
+                                    }
+                                    fputcsv(\$file, \$headers);
+                                }
+
+                                // Add data rows
+                                foreach (\$records as \$record) {
+                                    \$row = [];
+                                    foreach (\$record->toArray() as \$key => \$value) {
+                                        // Handle array/object values (like relationships)
+                                        if (is_array(\$value) || is_object(\$value)) {
+                                            \$row[] = is_array(\$value) ? implode(', ', \$value) : (string) \$value;
+                                        } else {
+                                            \$row[] = \$value;
+                                        }
+                                    }
+                                    fputcsv(\$file, \$row);
+                                }
+
+                                fclose(\$file);
+                            };
+
+                            return response()->stream(\$callback, 200, \$headers);
+                        }),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->striped()
+            ->paginated([10, 25, 50, 100]);
     }
 
     public static function getPages(): array
@@ -600,26 +699,26 @@ class {$resourceName} extends Resource
 
             switch ($fieldType) {
                 case 'boolean':
-                    $columns[] = "BooleanColumn::make('{$fieldName}')";
+                    $columns[] = "BooleanColumn::make('{$fieldName}')->toggleable()";
                     break;
                 case 'decimal':
-                    $columns[] = "TextColumn::make('{$fieldName}')->money('USD')->sortable()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->money('USD')->sortable()->toggleable()";
                     break;
                 case 'email':
-                    $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()->toggleable()";
                     break;
                 case 'enum':
-                    $columns[] = "TextColumn::make('{$fieldName}')->badge()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->badge()->toggleable()";
                     break;
                 case 'date':
                 case 'datetime':
-                    $columns[] = "TextColumn::make('{$fieldName}')->dateTime()->sortable()";
+                    $columns[] = "TextColumn::make('{$fieldName}')->dateTime()->sortable()->toggleable()";
                     break;
                 default:
                     if (in_array($fieldName, ['name', 'title', 'slug', 'sku', 'email'])) {
-                        $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()";
+                        $columns[] = "TextColumn::make('{$fieldName}')->searchable()->sortable()->toggleable()";
                     } else {
-                        $columns[] = "TextColumn::make('{$fieldName}')->sortable()";
+                        $columns[] = "TextColumn::make('{$fieldName}')->sortable()->toggleable()";
                     }
                     break;
             }
@@ -629,12 +728,13 @@ class {$resourceName} extends Resource
         foreach ($this->data['relationships'] ?? [] as $relationship) {
             if ($relationship['from_model'] === $modelData['name'] && $relationship['type'] === 'belongsTo') {
                 $relationshipName = $relationship['relationship_name'] ?? Str::camel($relationship['to_model']);
-                $columns[] = "TextColumn::make('{$relationshipName}.name')->label('" . Str::title($relationship['to_model']) . "')";
+                $columns[] = "TextColumn::make('{$relationshipName}.name')->label('" . Str::title($relationship['to_model']) . "')->toggleable()";
             }
         }
 
-        // Add created_at
-        $columns[] = "TextColumn::make('created_at')->dateTime()->sortable()";
+        // Add timestamps
+        $columns[] = "TextColumn::make('created_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true)";
+        $columns[] = "TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true)";
 
         return implode(",\n                ", $columns);
     }
@@ -771,8 +871,11 @@ class {$resourceName} extends Resource
 namespace Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName}\\Pages;
 
 use Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName};
-use Filament\\Actions;
+use Filament\\Actions\\Action;
+use Filament\\Actions\\CreateAction;
 use Filament\\Resources\\Pages\\ListRecords;
+use Filament\\Notifications\\Notification;
+use Illuminate\\Support\\Facades\\Artisan;
 
 class List{$pluralName} extends ListRecords
 {
@@ -780,9 +883,69 @@ class List{$pluralName} extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\\CreateAction::make(),
+        \$actions = [
+            CreateAction::make()
+                ->icon('heroicon-o-plus')
+                ->color('primary'),
         ];
+
+        // Add seeder action if seeder exists
+        if (class_exists('Modules\\{$this->moduleName}\\database\\seeders\\{$modelName}Seeder')) {
+            \$actions[] = Action::make('run_seeder')
+                ->label('Run Seeder')
+                ->icon('heroicon-o-play')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading('Run {$modelName} Seeder')
+                ->modalDescription('This will create sample {$modelName} records. Are you sure?')
+                ->action(function () {
+                    try {
+                        Artisan::call('db:seed', ['--class' => 'Modules\\{$this->moduleName}\\database\\seeders\\{$modelName}Seeder']);
+
+                        Notification::make()
+                            ->title('Seeder executed successfully!')
+                            ->body('Sample {$modelName} records have been created.')
+                            ->success()
+                            ->send();
+                    } catch (\\Exception \$e) {
+                        Notification::make()
+                            ->title('Seeder execution failed')
+                            ->body(\$e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                });
+        }
+
+        // Add factory action if factory exists
+        if (class_exists('Modules\\{$this->moduleName}\\database\\factories\\{$modelName}Factory')) {
+            \$actions[] = Action::make('create_test_data')
+                ->label('Create Test Data')
+                ->icon('heroicon-o-beaker')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Create Test {$modelName} Data')
+                ->modalDescription('This will create 10 test {$modelName} records using the factory. Are you sure?')
+                ->action(function () {
+                    try {
+                        \\Modules\\{$this->moduleName}\\app\\Models\\{$modelName}::factory()->count(10)->create();
+
+                        Notification::make()
+                            ->title('Test data created successfully!')
+                            ->body('10 test {$modelName} records have been created.')
+                            ->success()
+                            ->send();
+                    } catch (\\Exception \$e) {
+                        Notification::make()
+                            ->title('Test data creation failed')
+                            ->body(\$e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                });
+        }
+
+        return \$actions;
     }
 }";
         File::put("{$pagesPath}/Pages/List{$pluralName}.php", $listContent);
@@ -807,7 +970,7 @@ class Create{$modelName} extends CreateRecord
 namespace Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName}\\Pages;
 
 use Modules\\{$this->moduleName}\\app\\Filament\\Resources\\{$resourceName};
-use Filament\\Actions;
+use Filament\\Actions\\DeleteAction;
 use Filament\\Resources\\Pages\\EditRecord;
 
 class Edit{$modelName} extends EditRecord
@@ -817,7 +980,7 @@ class Edit{$modelName} extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\\DeleteAction::make(),
+            DeleteAction::make(),
         ];
     }
 }";
@@ -871,10 +1034,17 @@ class {$modelName}Factory extends Factory
     {
         $fields = [];
 
+        // Process all fields including required ones
         foreach ($modelData['fields'] as $field) {
             $fieldName = $field['name'];
             $fieldType = $field['type'];
+            $required = $field['required'] ?? false;
             $enumOptions = $field['enum_options'] ?? null;
+
+            // Skip auto-generated fields
+            if (in_array($fieldName, ['id', 'created_at', 'updated_at'])) {
+                continue;
+            }
 
             switch ($fieldType) {
                 case 'string':
@@ -952,8 +1122,50 @@ class {$modelName}Factory extends Factory
                         $options = array_map('trim', explode("\n", $enumOptions));
                         $optionsString = "'" . implode("', '", $options) . "'";
                         $fields[] = "'{$fieldName}' => \$this->faker->randomElement([{$optionsString}])";
+                    } else {
+                        $fields[] = "'{$fieldName}' => 'active'"; // Default enum value
                     }
                     break;
+
+                case 'file':
+                case 'image':
+                    $fields[] = "'{$fieldName}' => \$this->faker->imageUrl(640, 480, 'business', true)";
+                    break;
+
+                case 'password':
+                    $fields[] = "'{$fieldName}' => bcrypt('password')";
+                    break;
+
+                default:
+                    // Handle any unspecified field types
+                    if ($required) {
+                        $fields[] = "'{$fieldName}' => \$this->faker->words(2, true)";
+                    }
+                    break;
+            }
+        }
+
+        // Add foreign key relationships
+        foreach ($this->data['relationships'] ?? [] as $relationship) {
+            if ($relationship['from_model'] === $modelData['name'] && $relationship['type'] === 'belongsTo') {
+                $foreignKey = $relationship['foreign_key'] ?? Str::snake($relationship['to_model']) . '_id';
+                $relatedModel = $relationship['to_model'];
+
+                // Check if the related model exists in this module
+                $relatedModelExists = false;
+                foreach ($this->data['models'] ?? [] as $model) {
+                    if ($model['name'] === $relatedModel) {
+                        $relatedModelExists = true;
+                        break;
+                    }
+                }
+
+                if ($relatedModelExists) {
+                    $fields[] = "'{$foreignKey}' => \\Modules\\{$this->moduleName}\\app\\Models\\{$relatedModel}::factory()";
+                } else {
+                    // For external models, just use a random ID (1-10)
+                    $fields[] = "'{$foreignKey}' => \$this->faker->numberBetween(1, 10)";
+                }
             }
         }
 
@@ -976,7 +1188,10 @@ class {$modelName}Seeder extends Seeder
 {
     public function run(): void
     {
-        {$modelName}::factory()->count(10)->create();
+        // Create records with proper relationships
+        {$modelName}::factory()
+            ->count(10)
+            ->create();
     }
 }";
 
@@ -985,6 +1200,39 @@ class {$modelName}Seeder extends Seeder
                 $content
             );
         }
+
+        // Generate main module seeder
+        $this->generateMainModuleSeeder();
+    }
+
+    private function generateMainModuleSeeder(): void
+    {
+        $seederCalls = [];
+        foreach ($this->data['models'] ?? [] as $modelData) {
+            $modelName = Str::studly($modelData['name']);
+            $seederCalls[] = "        \$this->call({$modelName}Seeder::class);";
+        }
+
+        $seederCallsString = implode("\n", $seederCalls);
+
+        $content = "<?php
+
+namespace Modules\\{$this->moduleName}\\database\\seeders;
+
+use Illuminate\\Database\\Seeder;
+
+class {$this->moduleName}DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+{$seederCallsString}
+    }
+}";
+
+        File::put(
+            "{$this->modulePath}/database/seeders/{$this->moduleName}DatabaseSeeder.php",
+            $content
+        );
     }
 
     private function registerAndMigrate(): void
@@ -997,6 +1245,15 @@ class {$modelName}Seeder extends Seeder
 
         // Register permissions
         Artisan::call('permissions:register', ['--module' => $this->moduleName]);
+
+        // Auto-enable module after generation
+        $this->enableModule();
+    }
+
+    private function enableModule(): void
+    {
+        $statusService = new ModuleStatusService();
+        $statusService->enable($this->moduleName);
     }
 
     private function registerServiceProvider(): void

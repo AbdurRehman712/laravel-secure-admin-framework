@@ -3,6 +3,7 @@
 namespace Modules\PublicUser\app\Filament\Resources\UserResource\Pages;
 
 use Modules\PublicUser\app\Filament\Resources\UserResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListUsers extends ListRecords
@@ -12,7 +13,9 @@ class ListUsers extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make()
+                ->icon('heroicon-o-plus')
+                ->color('primary'),
         ];
     }
 }

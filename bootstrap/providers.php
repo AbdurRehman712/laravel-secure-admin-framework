@@ -10,4 +10,6 @@ return [
     Modules\Ecommerce\app\Providers\EcommerceServiceProvider::class,
     Modules\Blog\app\Providers\BlogServiceProvider::class,
     Modules\Library\app\Providers\LibraryServiceProvider::class,
+    Modules\Todo\app\Providers\TodoServiceProvider::class,
+    Modules\Shops\app\Providers\ShopsServiceProvider::class,
 ];
