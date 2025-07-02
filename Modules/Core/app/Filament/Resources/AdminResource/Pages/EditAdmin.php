@@ -37,7 +37,8 @@ class EditAdmin extends EditRecord
         $roles = $this->data['roles'] ?? [];
         
         if (!empty($roles)) {
-            $this->record->syncRoles($roles);
+            $roleModels = Role::whereIn('id', $roles)->get();
+            $this->record->syncRoles($roleModels);
         }
     }
 }
