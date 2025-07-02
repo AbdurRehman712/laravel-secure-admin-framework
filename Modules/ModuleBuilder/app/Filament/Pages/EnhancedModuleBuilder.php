@@ -69,16 +69,21 @@ class EnhancedModuleBuilder extends Page
                 ->label('Module Name')
                 ->required()
                 ->placeholder('e.g., Blog, Shop, CRM')
-                ->live()
-                ->afterStateUpdated(fn ($state, callable $set) =>
-                    $set('module_slug', Str::slug($state))
-                )
+                ->live(debounce: 500)
+                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                    // Only auto-generate slug if it's empty or matches the previous auto-generated value
+                    $currentSlug = $get('module_slug');
+                    if (empty($currentSlug) || $currentSlug === Str::slug($get('module_name'))) {
+                        $set('module_slug', Str::slug($state));
+                    }
+                })
                 ->columnSpan(1),
 
             TextInput::make('module_slug')
                 ->label('Module Slug')
-                ->disabled()
-                ->dehydrated()
+                ->required()
+                ->placeholder('Auto-generated from module name')
+                ->helperText('Edit to customize the module slug')
                 ->columnSpan(1),
 
             Textarea::make('description')
@@ -128,17 +133,21 @@ class EnhancedModuleBuilder extends Page
                     ->label('Model Name')
                     ->required()
                     ->placeholder('e.g., Product, Category, Order')
-                    ->live()
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $set('table_name', Str::plural(Str::snake($state)));
+                    ->live(debounce: 500)
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        // Only auto-generate table name if it's empty or if user hasn't manually edited it
+                        $currentTableName = $get('table_name');
+                        if (empty($currentTableName)) {
+                            $set('table_name', Str::plural(Str::snake($state)));
+                        }
                     })
                     ->columnSpan(1),
 
                 TextInput::make('table_name')
                     ->label('Table Name')
                     ->required()
-                    ->disabled()
-                    ->dehydrated()
+                    ->placeholder('Auto-generated from model name')
+                    ->helperText('Edit to customize the table name')
                     ->columnSpan(1),
 
                 Textarea::make('description')
@@ -172,6 +181,7 @@ class EnhancedModuleBuilder extends Page
                     ->required()
                     ->options([
                         'string' => 'String',
+                        'slug' => 'Slug (Auto-generated)',
                         'text' => 'Text',
                         'integer' => 'Integer',
                         'decimal' => 'Decimal',
@@ -378,7 +388,7 @@ class EnhancedModuleBuilder extends Page
                     'description' => 'Product categories for organization',
                     'fields' => [
                         ['name' => 'name', 'type' => 'string', 'required' => true, 'length' => 255],
-                        ['name' => 'slug', 'type' => 'string', 'required' => true, 'length' => 255],
+                        ['name' => 'slug', 'type' => 'slug', 'required' => true, 'length' => 255],
                         ['name' => 'description', 'type' => 'text', 'required' => false],
                         ['name' => 'image', 'type' => 'image', 'required' => false],
                         ['name' => 'active', 'type' => 'boolean', 'required' => false],
@@ -391,7 +401,7 @@ class EnhancedModuleBuilder extends Page
                     'description' => 'Shop products with full e-commerce features',
                     'fields' => [
                         ['name' => 'name', 'type' => 'string', 'required' => true, 'length' => 255],
-                        ['name' => 'slug', 'type' => 'string', 'required' => true, 'length' => 255],
+                        ['name' => 'slug', 'type' => 'slug', 'required' => true, 'length' => 255],
                         ['name' => 'description', 'type' => 'rich_text', 'required' => false],
                         ['name' => 'short_description', 'type' => 'text', 'required' => false],
                         ['name' => 'sku', 'type' => 'string', 'required' => true, 'length' => 100],

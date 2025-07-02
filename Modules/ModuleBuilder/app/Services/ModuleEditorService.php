@@ -364,6 +364,7 @@ return new class extends Migration
 
         switch ($fieldType) {
             case 'string':
+            case 'slug':
                 $fieldCode .= $length ? "string('{$fieldName}', {$length})" : "string('{$fieldName}')";
                 break;
             case 'text':
@@ -614,6 +615,15 @@ class {$resourceName} extends Resource
                     $component = "TextInput::make('{$fieldName}')";
                     if ($required) $component .= "->required()";
                     if ($length) $component .= "->maxLength({$length})";
+                    $fields[] = $component;
+                    break;
+
+                case 'slug':
+                    $component = "TextInput::make('{$fieldName}')";
+                    if ($required) $component .= "->required()";
+                    if ($length) $component .= "->maxLength({$length})";
+                    $component .= "->helperText('Auto-generated from name, but you can edit it')";
+                    $component .= "->placeholder('Will be auto-generated')";
                     $fields[] = $component;
                     break;
                     
@@ -918,6 +928,10 @@ class Edit{$modelName} extends EditRecord
                     } else {
                         $factoryFields[] = "'{$fieldName}' => \$this->faker->words(2, true)";
                     }
+                    break;
+
+                case 'slug':
+                    $factoryFields[] = "'{$fieldName}' => \$this->faker->slug()";
                     break;
                 case 'text':
                     $factoryFields[] = "'{$fieldName}' => \$this->faker->paragraph()";

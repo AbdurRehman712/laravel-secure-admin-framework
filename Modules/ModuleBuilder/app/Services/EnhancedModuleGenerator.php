@@ -308,6 +308,10 @@ class {$modelName} extends Model
         // Generate fields
         $fieldsCode = '';
         foreach ($modelData['fields'] ?? [] as $field) {
+            // Convert slug type to string for migration
+            if ($field['type'] === 'slug') {
+                $field['type'] = 'string';
+            }
             $fieldsCode .= $this->generateMigrationField($field);
         }
         
@@ -755,7 +759,28 @@ class {$resourceName} extends Resource
                     $component = "TextInput::make('{$fieldName}')";
                     if ($required) $component .= "->required()";
                     if ($length) $component .= "->maxLength({$length})";
-                    // Auto-slug functionality removed due to import conflicts
+                    $fields[] = $component;
+                    break;
+
+                case 'slug':
+                    // Find the name field to use as source for auto-slug
+                    $nameField = null;
+                    foreach ($modelData['fields'] as $field) {
+                        if (in_array($field['name'], ['name', 'title'])) {
+                            $nameField = $field['name'];
+                            break;
+                        }
+                    }
+
+                    $component = "TextInput::make('{$fieldName}')";
+                    if ($required) $component .= "->required()";
+                    if ($length) $component .= "->maxLength({$length})";
+
+                    if ($nameField) {
+                        $component .= "->helperText('Auto-generated from {$nameField}, but you can edit it')";
+                        $component .= "->placeholder('Will be auto-generated')";
+                    }
+
                     $fields[] = $component;
                     break;
 
@@ -1061,6 +1086,10 @@ class {$modelName}Factory extends Factory
                     } else {
                         $fields[] = "'{$fieldName}' => \$this->faker->words(2, true)";
                     }
+                    break;
+
+                case 'slug':
+                    $fields[] = "'{$fieldName}' => \$this->faker->slug()";
                     break;
 
                 case 'text':

@@ -175,16 +175,20 @@ class ModuleEditor extends Page
                     ->label('Model Name')
                     ->required()
                     ->placeholder('e.g., Review, Comment, Tag')
-                    ->live()
-                    ->afterStateUpdated(function ($state, callable $set) {
-                        $set('table_name', Str::plural(Str::snake($state)));
+                    ->live(debounce: 500)
+                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                        // Only auto-generate table name if it's empty
+                        $currentTableName = $get('table_name');
+                        if (empty($currentTableName)) {
+                            $set('table_name', Str::plural(Str::snake($state)));
+                        }
                     }),
-                
+
                 TextInput::make('table_name')
                     ->label('Table Name')
                     ->required()
-                    ->disabled()
-                    ->dehydrated(),
+                    ->placeholder('Auto-generated from model name')
+                    ->helperText('Edit to customize the table name'),
                 
                 Textarea::make('description')
                     ->label('Model Description')
@@ -215,6 +219,7 @@ class ModuleEditor extends Page
                     ->required()
                     ->options([
                         'string' => 'String (Text)',
+                        'slug' => 'Slug (Auto-generated)',
                         'text' => 'Text (Long Text)',
                         'integer' => 'Integer (Number)',
                         'decimal' => 'Decimal (Money/Float)',
