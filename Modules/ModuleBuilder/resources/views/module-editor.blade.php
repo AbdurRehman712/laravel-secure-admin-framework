@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="space-y-6">
+    <div class="module-builder-container">
         <!-- Instructions -->
         @if(!$selectedModule)
         <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 p-6">
@@ -18,7 +18,7 @@
 
         <!-- Current Module Info -->
         @if($selectedModule && $moduleData)
-        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-6">
+        <div class="module-info-card">
             <div class="flex items-center gap-2 mb-2">
                 <x-heroicon-o-cube class="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <h2 class="text-lg font-medium text-blue-900 dark:text-blue-100">Editing Module: {{ $selectedModule }}</h2>
@@ -32,7 +32,7 @@
         @endif
 
         <!-- Form Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div class="module-form-card">
             <form wire:submit="updateModule">
                 {{ $this->form }}
 

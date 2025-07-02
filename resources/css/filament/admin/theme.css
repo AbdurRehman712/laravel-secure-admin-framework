@@ -1,0 +1,19 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../Modules/**/resources/views/**/*';
+@source '../../../../Modules/**/app/Filament/**/*';
+
+/* Custom styles for Module Builder */
+.module-builder-container {
+    @apply space-y-6;
+}
+
+.module-info-card {
+    @apply bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-6;
+}
+
+.module-form-card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6;
+}
