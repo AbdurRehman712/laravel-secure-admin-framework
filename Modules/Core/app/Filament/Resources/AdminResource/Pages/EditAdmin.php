@@ -5,6 +5,7 @@ namespace Modules\Core\app\Filament\Resources\AdminResource\Pages;
 use Modules\Core\app\Filament\Resources\AdminResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Spatie\Permission\Models\Role;
 
 class EditAdmin extends EditRecord
 {
@@ -15,5 +16,28 @@ class EditAdmin extends EditRecord
         return [
             Actions\DeleteAction::make(),
         ];
+    }
+    
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['roles'] = $this->record->roles->pluck('id')->toArray();
+        return $data;
+    }
+    
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $roles = $data['roles'] ?? [];
+        unset($data['roles']);
+        
+        return $data;
+    }
+    
+    protected function afterSave(): void
+    {
+        $roles = $this->data['roles'] ?? [];
+        
+        if (!empty($roles)) {
+            $this->record->syncRoles($roles);
+        }
     }
 }

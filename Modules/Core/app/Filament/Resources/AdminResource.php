@@ -8,6 +8,7 @@ use Filament\Tables\Table;
 use Filament\Schemas\Schema;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\CheckboxList;
 use Modules\Core\app\Filament\Resources\AdminResource\Pages;
 use Modules\Core\app\Models\Admin;
 use Illuminate\Support\Facades\Hash;
@@ -46,12 +47,12 @@ class AdminResource extends Resource
                     ->dehydrated(fn ($state) => filled($state))
                     ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                     ->label('Password'),
-                Select::make('roles')
-                    ->multiple()
-                    ->relationship('roles', 'name')
-                    ->options(Role::where('guard_name', 'admin')->pluck('name', 'id'))
-                    ->preload()
-                    ->label('Roles'),
+                CheckboxList::make('roles')
+                    ->label('Roles')
+                    ->options(Role::where('guard_name', 'admin')->pluck('name', 'id')->toArray())
+                    ->columns(2)
+                    ->bulkToggleable()
+                    ->gridDirection('row'),
             ]);
     }
 
