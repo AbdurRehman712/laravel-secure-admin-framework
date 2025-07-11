@@ -39,11 +39,32 @@ class ModuleEditorService
         // Generate new factories and seeders
         $this->generateNewFactoriesAndSeeders();
 
+        // Register service provider if not already registered
+        $this->registerServiceProvider();
+
         // Run migrations
         $this->runMigrations();
 
         // Register new permissions
         $this->registerPermissions();
+    }
+
+    private function registerServiceProvider(): void
+    {
+        $providersFile = base_path('bootstrap/providers.php');
+        $content = File::get($providersFile);
+
+        $providerClass = "Modules\\{$this->moduleName}\\app\\Providers\\{$this->moduleName}ServiceProvider::class,";
+
+        if (!Str::contains($content, $providerClass)) {
+            $content = str_replace(
+                '];',
+                "    {$providerClass}\n];",
+                $content
+            );
+
+            File::put($providersFile, $content);
+        }
     }
 
     private function addFieldsToExistingTables(): void

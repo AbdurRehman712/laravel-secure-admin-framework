@@ -1,6 +1,6 @@
 {
     "Core": true,
     "PublicUser": true,
-    "Shop": true,
-    "Shops": true
+    "ModuleBuilder": true,
+    "Shop": true
 }

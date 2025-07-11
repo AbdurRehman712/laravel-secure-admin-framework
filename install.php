@@ -113,12 +113,22 @@ if (file_exists('package.json')) {
 
 echo "🔧 Step 7: Final optimizations...\n";
 
-// Optimize for production
-runCommand('php artisan config:cache');
-runCommand('php artisan route:cache');
-runCommand('php artisan view:cache');
+// Check if we're in production environment
+$appEnv = getEnvValue($envContent, 'APP_ENV');
+$isProduction = $appEnv === 'production';
 
-echo "   ✅ Application optimized\n\n";
+if ($isProduction) {
+    echo "   🏭 Production environment detected, applying optimizations...\n";
+    runCommand('php artisan config:cache');
+    runCommand('php artisan route:cache');
+    // Skip view:cache for Filament applications as it can cause component issues
+    echo "   ⚠️  Skipping view cache (not recommended for Filament applications)\n";
+    echo "   ✅ Production optimizations applied\n\n";
+} else {
+    echo "   🛠️  Development environment detected, skipping cache optimizations\n";
+    echo "   💡 For production, run: php artisan config:cache && php artisan route:cache\n";
+    echo "   ✅ Development environment ready\n\n";
+}
 
 echo "🎉 Installation completed successfully!\n\n";
 
@@ -140,16 +150,18 @@ echo "✨ Happy coding with SecureAdmin Framework!\n";
  */
 function runCommand($command) {
     echo "   Running: {$command}\n";
-    $output = [];
+
+    // Use system() for simpler execution
     $returnCode = 0;
-    exec($command . ' 2>&1', $output, $returnCode);
-    
+    system($command, $returnCode);
+
     if ($returnCode !== 0) {
-        echo "   ❌ Command failed: " . implode("\n", $output) . "\n";
+        echo "   ❌ Command failed with return code: {$returnCode}\n";
+        echo "   Please check the error above and try again.\n";
         exit(1);
     }
-    
-    return $output;
+
+    echo "   ✅ Command completed successfully\n";
 }
 
 function getEnvValue($envContent, $key) {

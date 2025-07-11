@@ -13,6 +13,9 @@ This guide addresses the common database-related errors during fresh installatio
 ### Issue 3: "SQLSTATE[42S02]: Base table or view not found"
 **Cause**: Application tries to access database tables that haven't been created yet.
 
+### Issue 4: "Unable to locate a class or view for component [filament-panels::form.actions]"
+**Cause**: View caching conflicts with Filament components during installation.
+
 ## ✅ Solutions Implemented
 
 The framework now includes several fixes:
@@ -21,6 +24,7 @@ The framework now includes several fixes:
 2. **Installation Scripts**: Automated scripts handle the installation process correctly
 3. **Database Checks**: Built-in checks prevent database access during migrations
 4. **Graceful Fallbacks**: Services fail silently during installation instead of throwing errors
+5. **Filament-Aware Caching**: Skips problematic view caching that conflicts with Filament components
 
 ## 🚀 Installation Methods
 
@@ -156,6 +160,9 @@ QUEUE_CONNECTION=sync
 **Error**: "Access denied for user"
 **Solution**: Check database credentials in `.env` file.
 
+**Error**: "Unable to locate a class or view for component [filament-panels::form.actions]"
+**Solution**: This occurs during view caching. The installation scripts now skip view caching automatically. If you encounter this manually, avoid running `php artisan view:cache` with Filament applications.
+
 ## 📋 Post-Installation Checklist
 
 - [ ] Application loads without errors at `/admin`
@@ -201,6 +208,25 @@ After successful installation:
 2. **Create First Module**: Use the Enhanced Module Builder
 3. **Configure Permissions**: Set up user roles
 4. **Customize Branding**: Update logos and colors
+
+## 🎨 Filament-Specific Notes
+
+### View Caching
+- **Never run** `php artisan view:cache` with Filament applications
+- It causes component resolution issues
+- The installation scripts automatically skip this step
+
+### Production Optimization
+For production environments, use only these caching commands:
+```bash
+php artisan config:cache
+php artisan route:cache
+# Skip view:cache for Filament apps
+```
+
+### Development vs Production
+- **Development**: Uses file-based cache/sessions for easier debugging
+- **Production**: Uses database cache/sessions for better performance
 
 ## 🆘 Getting Help
 

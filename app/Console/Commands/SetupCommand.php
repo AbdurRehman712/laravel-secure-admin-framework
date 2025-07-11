@@ -124,11 +124,11 @@ class SetupCommand extends Command
     {
         if (File::exists(base_path('package.json'))) {
             $this->line('   📦 Installing npm dependencies...');
-            $this->runCommand('npm install');
-            
+            $this->executeCommand('npm install');
+
             $this->line('   🏗️  Building assets...');
-            $this->runCommand('npm run build');
-            
+            $this->executeCommand('npm run build');
+
             $this->line('   ✅ Assets built successfully');
         } else {
             $this->line('   ⚠️  No package.json found, skipping asset build');
@@ -138,42 +138,43 @@ class SetupCommand extends Command
     private function finalOptimizations()
     {
         if (app()->environment('production')) {
+            $this->line('   🏭 Applying production optimizations...');
+
             Artisan::call('config:cache');
+            $this->line('   ✅ Configuration cached');
+
             Artisan::call('route:cache');
-            Artisan::call('view:cache');
-            
+            $this->line('   ✅ Routes cached');
+
+            // Skip view:cache for Filament applications as it can cause component issues
+            $this->line('   ⚠️  Skipping view cache (not recommended for Filament applications)');
+
             $this->line('   ✅ Production optimizations applied');
         } else {
+            $this->line('   🛠️  Development environment detected');
+            $this->line('   💡 For production, manually run: php artisan config:cache && php artisan route:cache');
             $this->line('   ✅ Development environment ready');
         }
     }
 
-    private function runCommand($command)
+    private function executeCommand($command)
     {
-        $process = proc_open(
-            $command,
-            [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ],
-            $pipes,
-            base_path()
-        );
+        $this->line("   Executing: {$command}");
 
-        if (is_resource($process)) {
-            fclose($pipes[0]);
-            $output = stream_get_contents($pipes[1]);
-            $error = stream_get_contents($pipes[2]);
-            fclose($pipes[1]);
-            fclose($pipes[2]);
-            
-            $returnCode = proc_close($process);
-            
-            if ($returnCode !== 0) {
-                throw new \Exception("Command failed: {$command}\nError: {$error}");
-            }
+        // Use exec for simpler command execution
+        $output = [];
+        $returnCode = 0;
+
+        exec($command . ' 2>&1', $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            $errorMessage = implode("\n", $output);
+            $this->error("   ❌ Command failed: {$command}");
+            $this->error("   Error: {$errorMessage}");
+            throw new \Exception("Command failed: {$command}\nError: {$errorMessage}");
         }
+
+        return $output;
     }
 
     private function displayNextSteps()
