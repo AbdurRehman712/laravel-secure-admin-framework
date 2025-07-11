@@ -128,45 +128,47 @@ Modules/
 
 ### Installation
 
-1. **Clone the repository**
+#### 🚀 Automated Installation (Recommended)
+
+1. **Clone and setup**
    ```bash
    git clone https://github.com/AbdurRehman712/laravel-secure-admin-framework.git
    cd laravel-secure-admin-framework
-   ```
-
-2. **Install dependencies**
-   ```bash
    composer install
-   npm install
    ```
 
-3. **Environment setup**
+2. **Configure environment**
    ```bash
    cp .env.example .env
    php artisan key:generate
+   # Edit .env with your database credentials
    ```
 
-4. **Configure database**
+3. **Run installation script**
    ```bash
-   # Update .env file with your database credentials
-   DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_DATABASE=your_database_name
-   DB_USERNAME=your_username
-   DB_PASSWORD=your_password
+   php install.php
+   # OR
+   php artisan setup:install
    ```
 
-5. **Run migrations and seeders**
-   ```bash
-   php artisan migrate
-   php artisan db:seed
-   ```
+#### 🔧 Manual Installation
 
-   **Note:** If you encounter permission/role conflicts, use the safe reset command:
-   ```bash
-   php artisan db:reset-seed --force
-   ```
+If you encounter database-related errors during fresh installation, see [FRESH_INSTALLATION_GUIDE.md](FRESH_INSTALLATION_GUIDE.md) for detailed troubleshooting steps.
+
+**Quick manual steps:**
+```bash
+# 1. Basic setup
+composer install
+cp .env.example .env
+php artisan key:generate
+
+# 2. Configure .env with database credentials
+
+# 3. Run installation
+php artisan migrate
+php artisan db:seed
+npm install && npm run build
+```
 
 6. **Build assets**
    ```bash
