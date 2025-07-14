@@ -160,10 +160,41 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function registerPermissions(): void
     {
-        // Use the new module permission service instead of hardcoded permissions
-        \App\Services\ModulePermissionService::registerModulePermissions(
-            'Core',
-            \App\Services\ModulePermissionService::getModulePermissions('Core')
-        );
+        // Only register permissions if the database is set up
+        if ($this->isDatabaseReady()) {
+            try {
+                // Use the new module permission service instead of hardcoded permissions
+                \App\Services\ModulePermissionService::registerModulePermissions(
+                    'Core',
+                    \App\Services\ModulePermissionService::getModulePermissions('Core')
+                );
+            } catch (\Exception $e) {
+                // Silently fail during installation/migration
+                if (app()->environment('local')) {
+                    \Log::info('Core permissions registration skipped: ' . $e->getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Check if the database is ready for permission operations.
+     */
+    private function isDatabaseReady(): bool
+    {
+        try {
+            // Check if we're running migrations or if tables don't exist yet
+            if (app()->runningInConsole() &&
+                (in_array('migrate', $_SERVER['argv'] ?? []) ||
+                 in_array('migrate:fresh', $_SERVER['argv'] ?? []) ||
+                 in_array('migrate:reset', $_SERVER['argv'] ?? []))) {
+                return false;
+            }
+
+            // Check if permissions table exists
+            return \Schema::hasTable('permissions') && \Schema::hasTable('roles');
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }

@@ -54,8 +54,33 @@ class ShieldServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->registerResourcePermissions();
+        // Only register permissions if database is ready
+        if ($this->isDatabaseReady()) {
+            $this->registerResourcePermissions();
+        }
+
         $this->registerGates();
+    }
+
+    /**
+     * Check if the database is ready for permission operations.
+     */
+    private function isDatabaseReady(): bool
+    {
+        try {
+            // Check if we're running migrations
+            if (app()->runningInConsole() &&
+                (in_array('migrate', $_SERVER['argv'] ?? []) ||
+                 in_array('migrate:fresh', $_SERVER['argv'] ?? []) ||
+                 in_array('migrate:reset', $_SERVER['argv'] ?? []))) {
+                return false;
+            }
+
+            // Check if permissions table exists
+            return \Schema::hasTable('permissions') && \Schema::hasTable('roles');
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**

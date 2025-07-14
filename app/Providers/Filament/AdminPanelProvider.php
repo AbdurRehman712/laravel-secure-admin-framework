@@ -37,12 +37,23 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->font('Inter')
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverResources(in: base_path('Modules/Core/app/Filament/Resources'), for: 'Modules\Core\app\Filament\Resources')
             ->discoverResources(in: base_path('Modules/PublicUser/app/Filament/Resources'), for: 'Modules\PublicUser\app\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
+
+
+            // Auto-discover all module resources
+            ->tap(function ($panel) {
+                $this->discoverModuleResources($panel);
+            })
+
+            ->discoverPages(in: base_path('Modules/ModuleBuilder/app/Filament/Pages'), for: 'Modules\ModuleBuilder\app\Filament\Pages')
             ->pages([
                 Dashboard::class,
+                \Modules\ModuleBuilder\app\Filament\Pages\EnhancedModuleBuilder::class,
+                \Modules\ModuleBuilder\app\Filament\Pages\ModuleEditor::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
@@ -97,5 +108,34 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    private function discoverModuleResources($panel): void
+    {
+        $modulesPath = base_path('Modules');
+
+        if (!file_exists($modulesPath)) {
+            return;
+        }
+
+        $directories = glob($modulesPath . '/*', GLOB_ONLYDIR);
+
+        foreach ($directories as $directory) {
+            $moduleName = basename($directory);
+
+            // Skip system modules
+            if (in_array($moduleName, ['Core', 'PublicUser', 'ModuleBuilder'])) {
+                continue;
+            }
+
+            $resourcesPath = $directory . '/app/Filament/Resources';
+
+            if (file_exists($resourcesPath)) {
+                $panel->discoverResources(
+                    in: $resourcesPath,
+                    for: "Modules\\{$moduleName}\\app\\Filament\\Resources"
+                );
+            }
+        }
     }
 }

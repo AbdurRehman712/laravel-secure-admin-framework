@@ -56,29 +56,75 @@ class ModulePermissionService
     public static function getModulePermissions(string $moduleName): array
     {
         $permissions = [];
-        $resourcesPath = base_path("Modules/{$moduleName}/app/Filament/Resources");
-        
-        if (!File::exists($resourcesPath)) {
-            return $permissions;
+
+        // Handle special module permissions (like ModuleBuilder)
+        $specialPermissions = self::getSpecialModulePermissions($moduleName);
+        if (!empty($specialPermissions)) {
+            $permissions = array_merge($permissions, $specialPermissions);
         }
 
-        $resourceFiles = File::glob($resourcesPath . '/*Resource.php');
-        
-        foreach ($resourceFiles as $resourceFile) {
-            $resourceName = basename($resourceFile, '.php');
-            $resourceKey = Str::snake(str_replace('Resource', '', $resourceName));
-            
-            foreach (self::DEFAULT_PERMISSIONS as $action) {
-                $permissions[] = [
-                    'name' => "{$action}_{$resourceKey}",
-                    'display_name' => ucwords(str_replace('_', ' ', "{$action} {$resourceKey}")),
-                    'resource' => $resourceName,
-                    'action' => $action,
-                ];
+        // Handle regular Filament resources
+        $resourcesPath = base_path("Modules/{$moduleName}/app/Filament/Resources");
+
+        if (File::exists($resourcesPath)) {
+            $resourceFiles = File::glob($resourcesPath . '/*Resource.php');
+
+            foreach ($resourceFiles as $resourceFile) {
+                $resourceName = basename($resourceFile, '.php');
+                $resourceKey = Str::snake(str_replace('Resource', '', $resourceName));
+
+                foreach (self::DEFAULT_PERMISSIONS as $action) {
+                    $permissions[] = [
+                        'name' => "{$action}_{$resourceKey}",
+                        'display_name' => ucwords(str_replace('_', ' ', "{$action} {$resourceKey}")),
+                        'resource' => $resourceName,
+                        'action' => $action,
+                    ];
+                }
             }
         }
 
         return $permissions;
+    }
+
+    /**
+     * Get special permissions for modules that don't follow standard resource patterns
+     */
+    private static function getSpecialModulePermissions(string $moduleName): array
+    {
+        $specialPermissions = [];
+
+        // ModuleBuilder special permissions
+        if ($moduleName === 'ModuleBuilder') {
+            $specialPermissions = [
+                [
+                    'name' => 'view_simple_module_builder',
+                    'display_name' => 'View Simple Module Builder',
+                    'resource' => 'SimpleModuleBuilder',
+                    'action' => 'view',
+                ],
+                [
+                    'name' => 'create_modules',
+                    'display_name' => 'Create Modules',
+                    'resource' => 'SimpleModuleBuilder',
+                    'action' => 'create',
+                ],
+                [
+                    'name' => 'generate_modules',
+                    'display_name' => 'Generate Modules',
+                    'resource' => 'SimpleModuleBuilder',
+                    'action' => 'generate',
+                ],
+                [
+                    'name' => 'manage_module_builder',
+                    'display_name' => 'Manage Module Builder',
+                    'resource' => 'SimpleModuleBuilder',
+                    'action' => 'manage',
+                ],
+            ];
+        }
+
+        return $specialPermissions;
     }
 
     /**
@@ -117,8 +163,13 @@ class ModulePermissionService
      */
     public static function registerAllPermissions(): void
     {
+        // Check if database is ready before attempting to register permissions
+        if (!self::isDatabaseReady()) {
+            return;
+        }
+
         $modules = self::getModulesWithPermissions();
-        
+
         foreach ($modules as $moduleName => $permissions) {
             self::registerModulePermissions($moduleName, $permissions);
         }
@@ -129,8 +180,41 @@ class ModulePermissionService
      */
     public static function registerModulePermissions(string $moduleName, array $permissions, string $guard = 'admin'): void
     {
-        foreach ($permissions as $permissionData) {
-            Permission::findOrCreate($permissionData['name'], $guard);
+        // Check if database is ready before attempting to register permissions
+        if (!self::isDatabaseReady()) {
+            return;
+        }
+
+        try {
+            foreach ($permissions as $permissionData) {
+                Permission::findOrCreate($permissionData['name'], $guard);
+            }
+        } catch (\Exception $e) {
+            // Silently fail during installation
+            if (app()->environment('local')) {
+                \Log::info("Permission registration failed for module {$moduleName}: " . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Check if the database is ready for permission operations.
+     */
+    private static function isDatabaseReady(): bool
+    {
+        try {
+            // Check if we're running migrations
+            if (app()->runningInConsole() &&
+                (in_array('migrate', $_SERVER['argv'] ?? []) ||
+                 in_array('migrate:fresh', $_SERVER['argv'] ?? []) ||
+                 in_array('migrate:reset', $_SERVER['argv'] ?? []))) {
+                return false;
+            }
+
+            // Check if permissions table exists
+            return \Schema::hasTable('permissions') && \Schema::hasTable('roles');
+        } catch (\Exception $e) {
+            return false;
         }
     }
 
