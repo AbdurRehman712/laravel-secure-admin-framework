@@ -47,6 +47,12 @@ class ModulePermissionService
             $modules['System'] = $appPermissions;
         }
 
+        // Include AI Platform permissions
+        $aiPlatformPermissions = self::getAiPlatformPermissions();
+        if (!empty($aiPlatformPermissions)) {
+            $modules['AI Platform'] = $aiPlatformPermissions;
+        }
+
         return $modules;
     }
 
@@ -156,6 +162,144 @@ class ModulePermissionService
         }
 
         return $permissions;
+    }
+
+    /**
+     * Get AI Platform specific permissions
+     */
+    public static function getAiPlatformPermissions(): array
+    {
+        return [
+            // Project permissions
+            [
+                'name' => 'view_projects',
+                'display_name' => 'View Projects',
+                'resource' => 'Project',
+                'action' => 'view',
+            ],
+            [
+                'name' => 'create_projects',
+                'display_name' => 'Create Projects',
+                'resource' => 'Project',
+                'action' => 'create',
+            ],
+            [
+                'name' => 'edit_projects',
+                'display_name' => 'Edit Projects',
+                'resource' => 'Project',
+                'action' => 'edit',
+            ],
+            [
+                'name' => 'delete_projects',
+                'display_name' => 'Delete Projects',
+                'resource' => 'Project',
+                'action' => 'delete',
+            ],
+            [
+                'name' => 'manage_project_teams',
+                'display_name' => 'Manage Project Teams',
+                'resource' => 'Project',
+                'action' => 'manage_teams',
+            ],
+
+            // Workspace permissions
+            [
+                'name' => 'access_project_workspace',
+                'display_name' => 'Access Project Workspace',
+                'resource' => 'ProjectWorkspace',
+                'action' => 'access',
+            ],
+            [
+                'name' => 'create_workspace_content',
+                'display_name' => 'Create Workspace Content',
+                'resource' => 'ProjectWorkspace',
+                'action' => 'create_content',
+            ],
+            [
+                'name' => 'edit_workspace_content',
+                'display_name' => 'Edit Workspace Content',
+                'resource' => 'ProjectWorkspace',
+                'action' => 'edit_content',
+            ],
+            [
+                'name' => 'delete_workspace_content',
+                'display_name' => 'Delete Workspace Content',
+                'resource' => 'ProjectWorkspace',
+                'action' => 'delete_content',
+            ],
+            [
+                'name' => 'approve_workspace_content',
+                'display_name' => 'Approve Workspace Content',
+                'resource' => 'ProjectWorkspace',
+                'action' => 'approve_content',
+            ],
+
+            // Role-specific workspace permissions
+            [
+                'name' => 'access_product_owner_workspace',
+                'display_name' => 'Access Product Owner Workspace',
+                'resource' => 'ProductOwnerWorkspace',
+                'action' => 'access',
+            ],
+            [
+                'name' => 'access_designer_workspace',
+                'display_name' => 'Access Designer Workspace',
+                'resource' => 'DesignerWorkspace',
+                'action' => 'access',
+            ],
+            [
+                'name' => 'access_database_admin_workspace',
+                'display_name' => 'Access Database Admin Workspace',
+                'resource' => 'DatabaseAdminWorkspace',
+                'action' => 'access',
+            ],
+            [
+                'name' => 'access_frontend_developer_workspace',
+                'display_name' => 'Access Frontend Developer Workspace',
+                'resource' => 'FrontendDeveloperWorkspace',
+                'action' => 'access',
+            ],
+            [
+                'name' => 'access_backend_developer_workspace',
+                'display_name' => 'Access Backend Developer Workspace',
+                'resource' => 'BackendDeveloperWorkspace',
+                'action' => 'access',
+            ],
+            [
+                'name' => 'access_devops_workspace',
+                'display_name' => 'Access DevOps Workspace',
+                'resource' => 'DevOpsWorkspace',
+                'action' => 'access',
+            ],
+
+            // Module generation permissions
+            [
+                'name' => 'generate_modules',
+                'display_name' => 'Generate Modules',
+                'resource' => 'ModuleGenerator',
+                'action' => 'generate',
+            ],
+            [
+                'name' => 'install_modules',
+                'display_name' => 'Install Modules',
+                'resource' => 'ModuleGenerator',
+                'action' => 'install',
+            ],
+            [
+                'name' => 'manage_generated_modules',
+                'display_name' => 'Manage Generated Modules',
+                'resource' => 'ModuleGenerator',
+                'action' => 'manage',
+            ],
+
+            // AI Platform dashboard
+            [
+                'name' => 'view_ai_platform_dashboard',
+                'display_name' => 'View AI Platform Dashboard',
+                'resource' => 'AiPlatformDashboard',
+                'action' => 'view',
+            ],
+        ];
     }
 
     /**
