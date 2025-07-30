@@ -12,11 +12,19 @@ class WorkspaceContentList extends Component
     public Project $project;
     public string $role;
 
-    protected $listeners = ['content-created' => 'refreshContent'];
+    protected $listeners = [
+        'content-created' => 'refreshContent',
+        'role-switched' => 'updateRole',
+    ];
 
     public function mount(Project $project, string $role)
     {
         $this->project = $project;
+        $this->role = $role;
+    }
+
+    public function updateRole($role)
+    {
         $this->role = $role;
     }
 
@@ -25,6 +33,30 @@ class WorkspaceContentList extends Component
     {
         // This will trigger a re-render
         $this->render();
+    }
+
+    public function viewContent($contentId)
+    {
+        $content = ProjectWorkspaceContent::findOrFail($contentId);
+
+        // Emit event to parent component to show content details
+        $this->dispatch('showContentDetails', $content->id);
+    }
+
+    public function editContent($contentId)
+    {
+        $content = ProjectWorkspaceContent::findOrFail($contentId);
+
+        // Emit event to parent component to edit content
+        $this->dispatch('editContent', $content->id);
+    }
+
+    public function generateCode($contentId)
+    {
+        $content = ProjectWorkspaceContent::findOrFail($contentId);
+
+        // Emit event to parent component to generate code
+        $this->dispatch('generateCode', $content->id);
     }
 
     public function getWorkspaceContent()

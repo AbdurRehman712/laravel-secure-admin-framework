@@ -89,23 +89,17 @@ class ProjectWorkspaceContent extends Model
                 self::TYPE_USER_STORIES,
                 self::TYPE_ACCEPTANCE_CRITERIA,
             ],
-            'designer' => [
-                self::TYPE_WIREFRAMES,
-                self::TYPE_DESIGN_SYSTEM,
-            ],
-            'database_admin' => [
+            'database_backend_developer' => [
                 self::TYPE_DATABASE_SCHEMA,
-            ],
-            'frontend_developer' => [
-                self::TYPE_FRONTEND_COMPONENTS,
-            ],
-            'backend_developer' => [
                 self::TYPE_API_ENDPOINTS,
                 self::TYPE_BACKEND_LOGIC,
+                self::TYPE_FRONTEND_COMPONENTS,
             ],
-            'devops' => [
+            'project_manager' => [
                 self::TYPE_DEPLOYMENT_CONFIG,
                 self::TYPE_DOCKER_CONFIG,
+                self::TYPE_WIREFRAMES,
+                self::TYPE_DESIGN_SYSTEM,
             ],
         ];
     }

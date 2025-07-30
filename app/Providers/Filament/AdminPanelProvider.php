@@ -50,6 +50,7 @@ class AdminPanelProvider extends PanelProvider
             })
 
             ->discoverPages(in: base_path('Modules/ModuleBuilder/app/Filament/Pages'), for: 'Modules\ModuleBuilder\app\Filament\Pages')
+            ->discoverPages(in: base_path('Modules/ERDDesigner/app/Filament/Pages'), for: 'Modules\ERDDesigner\app\Filament\Pages')
             ->pages([
                 Dashboard::class,
                 \App\Filament\Pages\AiPlatformDashboard::class,
@@ -125,8 +126,8 @@ class AdminPanelProvider extends PanelProvider
         foreach ($directories as $directory) {
             $moduleName = basename($directory);
 
-            // Skip system modules
-            if (in_array($moduleName, ['Core', 'PublicUser', 'ModuleBuilder'])) {
+            // Skip system modules that are handled separately
+            if (in_array($moduleName, ['Core', 'PublicUser', 'ModuleBuilder', 'ERDDesigner'])) {
                 continue;
             }
 

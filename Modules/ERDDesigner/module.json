@@ -1,0 +1,19 @@
+{
+    "name": "ERDDesigner",
+    "alias": "erddesigner",
+    "description": "Advanced Database ERD Designer with visual canvas, SQL import/export, and Module Builder integration",
+    "keywords": [
+        "erd",
+        "database",
+        "designer",
+        "visual",
+        "sql",
+        "import",
+        "export"
+    ],
+    "priority": 0,
+    "providers": [
+        "Modules\\ERDDesigner\\app\\Providers\\ERDDesignerServiceProvider"
+    ],
+    "files": []
+}

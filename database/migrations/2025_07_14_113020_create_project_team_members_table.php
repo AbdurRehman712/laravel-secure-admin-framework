@@ -17,11 +17,8 @@ return new class extends Migration
             $table->foreignId('admin_id')->constrained()->onDelete('cascade');
             $table->enum('role', [
                 'product_owner',
-                'designer',
-                'database_admin',
-                'frontend_developer',
-                'backend_developer',
-                'devops'
+                'database_backend_developer',
+                'project_manager'
             ]);
             $table->json('permissions')->nullable();
             $table->timestamp('joined_at');

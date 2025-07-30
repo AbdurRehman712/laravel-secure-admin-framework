@@ -27,16 +27,49 @@
                                 {{ $template['example'] }}
                             </div>
                         </div>
+
+                        @if(isset($template['sample_response']))
+                        <div x-data="{ expanded: false }">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    💯 Perfect AI Response Sample:
+                                </label>
+                                <button
+                                    @click="expanded = !expanded"
+                                    class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                    <span x-text="expanded ? 'Hide' : 'Show'"></span>
+                                </button>
+                            </div>
+                            <div x-show="expanded" x-collapse>
+                                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-3 text-sm">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-green-700 dark:text-green-300 font-medium text-xs">
+                                            ✨ Copy this response for 100% accurate parsing
+                                        </span>
+                                        <button
+                                            onclick="navigator.clipboard.writeText({{ json_encode($template['sample_response']) }});
+                                                     this.innerHTML='✅ Copied!';
+                                                     setTimeout(() => this.innerHTML='📋 Copy Sample', 2000)"
+                                            class="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+                                            📋 Copy Sample
+                                        </button>
+                                    </div>
+                                    <pre class="whitespace-pre-wrap text-green-800 dark:text-green-200 text-xs overflow-x-auto">{{ $template['sample_response'] }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="flex gap-2">
-                            <button 
-                                wire:click="copyPrompt"
+                            <button
+                                wire:click="copyPrompt('{{ $templateKey }}')"
                                 class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm">
-                                Copy Prompt
+                                📋 Copy Prompt
                             </button>
-                            <button 
+                            <button
                                 wire:click="openForm('{{ $templateKey }}', {{ json_encode($template) }})"
                                 class="flex-1 px-3 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors text-sm">
-                                Use Template
+                                ✨ Use Template
                             </button>
                         </div>
                     </div>

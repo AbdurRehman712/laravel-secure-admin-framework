@@ -100,32 +100,116 @@ class ModulePermissionService
     {
         $specialPermissions = [];
 
-        // ModuleBuilder special permissions
+        // ModuleBuilder special permissions - these will be auto-created by AdminSeeder
         if ($moduleName === 'ModuleBuilder') {
             $specialPermissions = [
                 [
-                    'name' => 'view_simple_module_builder',
-                    'display_name' => 'View Simple Module Builder',
-                    'resource' => 'SimpleModuleBuilder',
+                    'name' => 'view_module_editor',
+                    'display_name' => 'View Module Editor',
+                    'resource' => 'ModuleEditor',
                     'action' => 'view',
                 ],
                 [
                     'name' => 'create_modules',
                     'display_name' => 'Create Modules',
-                    'resource' => 'SimpleModuleBuilder',
+                    'resource' => 'ModuleBuilder',
                     'action' => 'create',
                 ],
                 [
                     'name' => 'generate_modules',
                     'display_name' => 'Generate Modules',
-                    'resource' => 'SimpleModuleBuilder',
+                    'resource' => 'ModuleBuilder',
                     'action' => 'generate',
                 ],
                 [
                     'name' => 'manage_module_builder',
                     'display_name' => 'Manage Module Builder',
-                    'resource' => 'SimpleModuleBuilder',
+                    'resource' => 'ModuleBuilder',
                     'action' => 'manage',
+                ],
+            ];
+        }
+
+        // ERDDesigner special permissions
+        if ($moduleName === 'ERDDesigner') {
+            $specialPermissions = [
+                [
+                    'name' => 'access_erd_designer',
+                    'display_name' => 'Access ERD Designer',
+                    'resource' => 'ERDDesigner',
+                    'action' => 'access',
+                ],
+                [
+                    'name' => 'view_erd_projects',
+                    'display_name' => 'View ERD Projects',
+                    'resource' => 'ERDProject',
+                    'action' => 'view',
+                ],
+                [
+                    'name' => 'create_erd_projects',
+                    'display_name' => 'Create ERD Projects',
+                    'resource' => 'ERDProject',
+                    'action' => 'create',
+                ],
+                [
+                    'name' => 'edit_erd_projects',
+                    'display_name' => 'Edit ERD Projects',
+                    'resource' => 'ERDProject',
+                    'action' => 'edit',
+                ],
+                [
+                    'name' => 'delete_erd_projects',
+                    'display_name' => 'Delete ERD Projects',
+                    'resource' => 'ERDProject',
+                    'action' => 'delete',
+                ],
+                [
+                    'name' => 'export_erd_projects',
+                    'display_name' => 'Export ERD Projects',
+                    'resource' => 'ERDProject',
+                    'action' => 'export',
+                ],
+                [
+                    'name' => 'import_erd_projects',
+                    'display_name' => 'Import ERD Projects',
+                    'resource' => 'ERDProject',
+                    'action' => 'import',
+                ],
+                [
+                    'name' => 'manage_erd_tables',
+                    'display_name' => 'Manage ERD Tables',
+                    'resource' => 'ERDTable',
+                    'action' => 'manage',
+                ],
+                [
+                    'name' => 'manage_erd_fields',
+                    'display_name' => 'Manage ERD Fields',
+                    'resource' => 'ERDField',
+                    'action' => 'manage',
+                ],
+                [
+                    'name' => 'manage_erd_relationships',
+                    'display_name' => 'Manage ERD Relationships',
+                    'resource' => 'ERDRelationship',
+                    'action' => 'manage',
+                ],
+                [
+                    'name' => 'export_sql_from_erd',
+                    'display_name' => 'Export SQL from ERD',
+                    'resource' => 'ERDDesigner',
+                    'action' => 'export_sql',
+                ],
+                [
+                    'name' => 'import_sql_to_erd',
+                    'display_name' => 'Import SQL to ERD',
+                    'resource' => 'ERDDesigner',
+                    'action' => 'import_sql',
+                ],
+                [
+                    'name' => 'integrate_erd_module_builder',
+                    'display_name' => 'Integrate ERD with Module Builder',
+                    'resource' => 'ERDDesigner',
+                    'action' => 'integrate',
                 ],
             ];
         }
@@ -165,41 +249,55 @@ class ModulePermissionService
     }
 
     /**
-     * Get AI Platform specific permissions
+     * Get AI Platform specific permissions (Simplified 3-Role Structure)
      */
     public static function getAiPlatformPermissions(): array
     {
         return [
-            // Project permissions
+            // Core AI Platform Access
             [
-                'name' => 'view_projects',
-                'display_name' => 'View Projects',
-                'resource' => 'Project',
+                'name' => 'access_ai_platform',
+                'display_name' => 'Access AI Development Platform',
+                'resource' => 'AiPlatform',
+                'action' => 'access',
+            ],
+            [
+                'name' => 'view_application_templates',
+                'display_name' => 'View Application Templates',
+                'resource' => 'ApplicationTemplates',
                 'action' => 'view',
             ],
             [
-                'name' => 'create_projects',
-                'display_name' => 'Create Projects',
-                'resource' => 'Project',
-                'action' => 'create',
+                'name' => 'create_projects_from_templates',
+                'display_name' => 'Create Projects from Templates',
+                'resource' => 'ApplicationTemplates',
+                'action' => 'create_projects',
             ],
             [
-                'name' => 'edit_projects',
-                'display_name' => 'Edit Projects',
-                'resource' => 'Project',
-                'action' => 'edit',
+                'name' => 'generate_modules_from_templates',
+                'display_name' => 'Generate Modules from Templates',
+                'resource' => 'ApplicationTemplates',
+                'action' => 'generate_modules',
             ],
+
+            // Project Management (Simplified)
             [
-                'name' => 'delete_projects',
-                'display_name' => 'Delete Projects',
-                'resource' => 'Project',
-                'action' => 'delete',
+                'name' => 'access_project_workspace',
+                'display_name' => 'Access Project Workspace',
+                'resource' => 'ProjectWorkspace',
+                'action' => 'access',
             ],
             [
                 'name' => 'manage_project_teams',
-                'display_name' => 'Manage Project Teams',
-                'resource' => 'Project',
-                'action' => 'manage_teams',
+                'display_name' => 'Manage Project Teams (3 Roles)',
+                'resource' => 'ProjectTeams',
+                'action' => 'manage',
+            ],
+            [
+                'name' => 'approve_workspace_content',
+                'display_name' => 'Approve Workspace Content',
+                'resource' => 'WorkspaceContent',
+                'action' => 'approve',
             ],
 
             // Workspace permissions
@@ -234,41 +332,23 @@ class ModulePermissionService
                 'action' => 'approve_content',
             ],
 
-            // Role-specific workspace permissions
+            // Simplified 3-Role Workspace Permissions
             [
                 'name' => 'access_product_owner_workspace',
-                'display_name' => 'Access Product Owner Workspace',
+                'display_name' => 'Product Owner: User Stories & Requirements',
                 'resource' => 'ProductOwnerWorkspace',
                 'action' => 'access',
             ],
             [
-                'name' => 'access_designer_workspace',
-                'display_name' => 'Access Designer Workspace',
-                'resource' => 'DesignerWorkspace',
+                'name' => 'access_database_backend_workspace',
+                'display_name' => 'Database/Backend Dev: Schema & APIs',
+                'resource' => 'DatabaseBackendWorkspace',
                 'action' => 'access',
             ],
             [
-                'name' => 'access_database_admin_workspace',
-                'display_name' => 'Access Database Admin Workspace',
-                'resource' => 'DatabaseAdminWorkspace',
-                'action' => 'access',
-            ],
-            [
-                'name' => 'access_frontend_developer_workspace',
-                'display_name' => 'Access Frontend Developer Workspace',
-                'resource' => 'FrontendDeveloperWorkspace',
-                'action' => 'access',
-            ],
-            [
-                'name' => 'access_backend_developer_workspace',
-                'display_name' => 'Access Backend Developer Workspace',
-                'resource' => 'BackendDeveloperWorkspace',
-                'action' => 'access',
-            ],
-            [
-                'name' => 'access_devops_workspace',
-                'display_name' => 'Access DevOps Workspace',
-                'resource' => 'DevOpsWorkspace',
+                'name' => 'access_project_manager_workspace',
+                'display_name' => 'Project Manager: Planning & Deployment',
+                'resource' => 'ProjectManagerWorkspace',
                 'action' => 'access',
             ],
 

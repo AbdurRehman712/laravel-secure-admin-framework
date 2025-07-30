@@ -17,11 +17,8 @@ return new class extends Migration
             $table->foreignId('admin_id')->constrained()->onDelete('cascade');
             $table->enum('role', [
                 'product_owner',
-                'designer',
-                'database_admin',
-                'frontend_developer',
-                'backend_developer',
-                'devops'
+                'database_backend_developer',
+                'project_manager'
             ]);
             $table->enum('content_type', [
                 'user_stories',
@@ -33,7 +30,8 @@ return new class extends Migration
                 'frontend_components',
                 'backend_logic',
                 'deployment_config',
-                'docker_config'
+                'docker_config',
+                'project_planning'
             ]);
             $table->string('title');
             $table->json('content');

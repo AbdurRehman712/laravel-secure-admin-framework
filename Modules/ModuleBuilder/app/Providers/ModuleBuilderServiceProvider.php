@@ -51,18 +51,32 @@ class ModuleBuilderServiceProvider extends ServiceProvider
     {
         if (class_exists(\Spatie\Permission\Models\Permission::class)) {
             try {
-                $permission = \Spatie\Permission\Models\Permission::firstOrCreate([
-                    'name' => 'view_module_editor',
-                    'guard_name' => 'admin'
-                ]);
+                // Create all ModuleBuilder permissions
+                $permissions = [
+                    'view_module_editor',
+                    'create_modules',
+                    'generate_modules',
+                    'manage_module_builder',
+                ];
+
+                foreach ($permissions as $permissionName) {
+                    \Spatie\Permission\Models\Permission::firstOrCreate([
+                        'name' => $permissionName,
+                        'guard_name' => 'admin'
+                    ]);
+                }
 
                 // Assign to Super Admin role if it exists
                 $superAdminRole = \Spatie\Permission\Models\Role::where('name', 'Super Admin')
                     ->where('guard_name', 'admin')
                     ->first();
 
-                if ($superAdminRole && !$superAdminRole->hasPermissionTo('view_module_editor')) {
-                    $superAdminRole->givePermissionTo('view_module_editor');
+                if ($superAdminRole) {
+                    foreach ($permissions as $permissionName) {
+                        if (!$superAdminRole->hasPermissionTo($permissionName)) {
+                            $superAdminRole->givePermissionTo($permissionName);
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 // Silently fail if database is not ready or permissions table doesn't exist

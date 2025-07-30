@@ -24,6 +24,7 @@ class AiResponseParser
             'backend_logic' => $this->parseBackendLogic($cleanResponse),
             'deployment_config' => $this->parseDeploymentConfig($cleanResponse),
             'docker_config' => $this->parseDockerConfig($cleanResponse),
+            'project_planning' => $this->parseProjectPlanning($cleanResponse),
             default => $this->parseGeneric($cleanResponse),
         };
     }
@@ -154,25 +155,60 @@ class AiResponseParser
     private function parseDatabaseSchema(string $response): array
     {
         $tables = [];
-        
-        // Look for table definitions
-        preg_match_all('/(?:CREATE TABLE|Table:|##\s*)([a-zA-Z_]+)[\s\S]*?(?=(?:CREATE TABLE|Table:|##\s*[a-zA-Z_]+|$))/i', $response, $matches, PREG_SET_ORDER);
-        
-        foreach ($matches as $match) {
-            $tableName = trim($match[1]);
-            $tableContent = $match[0];
-            
-            $fields = $this->extractTableFields($tableContent);
-            $relationships = $this->extractRelationships($tableContent);
-            
+        $processedTables = [];
+
+        // Split content by table markers (## table_name or CREATE TABLE)
+        $sections = preg_split('/(?=##\s*\w+|CREATE\s+TABLE\s+\w+)/i', $response);
+
+        foreach ($sections as $section) {
+            $section = trim($section);
+            if (empty($section)) continue;
+
+            // Extract table name from section
+            $tableName = null;
+            if (preg_match('/##\s*(\w+)/i', $section, $match)) {
+                $tableName = trim($match[1]);
+            } elseif (preg_match('/CREATE\s+TABLE\s+(\w+)/i', $section, $match)) {
+                $tableName = trim($match[1]);
+            }
+
+            if (!$tableName) continue;
+
+            // Skip if we already processed this table (avoid duplicates from ## header + CREATE TABLE)
+            if (isset($processedTables[$tableName])) {
+                // If this section has more content (CREATE TABLE), update the existing entry
+                if (str_contains(strtoupper($section), 'CREATE TABLE')) {
+                    $fields = $this->extractTableFields($section);
+                    $relationships = $this->extractRelationships($section);
+                    $indexes = $this->extractIndexes($section);
+
+                    // Update the existing table entry
+                    foreach ($tables as &$table) {
+                        if ($table['name'] === $tableName) {
+                            $table['fields'] = $fields;
+                            $table['relationships'] = $relationships;
+                            $table['indexes'] = $indexes;
+                            break;
+                        }
+                    }
+                }
+                continue;
+            }
+
+            $processedTables[$tableName] = true;
+
+            $fields = $this->extractTableFields($section);
+            $relationships = $this->extractRelationships($section);
+            $indexes = $this->extractIndexes($section);
+
             $tables[] = [
                 'name' => $tableName,
                 'fields' => $fields,
                 'relationships' => $relationships,
-                'indexes' => $this->extractIndexes($tableContent),
+                'indexes' => $indexes,
             ];
         }
-        
+
         return [
             'tables' => $tables,
             'total_tables' => count($tables),
@@ -264,41 +300,91 @@ class AiResponseParser
     private function extractTableFields(string $content): array
     {
         $fields = [];
-        preg_match_all('/(\w+)\s+(varchar|int|text|boolean|timestamp|decimal|json)(\(\d+\))?/i', $content, $matches, PREG_SET_ORDER);
-        
+        $processedFields = [];
+
+        // Match SQL field definitions like: id BIGINT PRIMARY KEY AUTO_INCREMENT,
+        // name VARCHAR(255) NOT NULL,
+        // price DECIMAL(10,2) NOT NULL,
+        preg_match_all('/^\s*(\w+)\s+(BIGINT|VARCHAR|TEXT|BOOLEAN|TIMESTAMP|DECIMAL|INT|ENUM)(\([^)]+\))?\s*(.*?)(?:,|\n|$)/im', $content, $matches, PREG_SET_ORDER);
+
         foreach ($matches as $match) {
+            $fieldName = trim($match[1]);
+            $fieldType = strtolower(trim($match[2]));
+            $length = isset($match[3]) ? trim($match[3], '()') : null;
+            $constraints = isset($match[4]) ? trim($match[4]) : '';
+
+            // Skip common SQL keywords that aren't field names
+            if (in_array(strtoupper($fieldName), ['CREATE', 'TABLE', 'INDEX', 'FOREIGN', 'KEY', 'REFERENCES', 'PRIMARY'])) {
+                continue;
+            }
+
+            // Skip duplicate field names
+            if (isset($processedFields[$fieldName])) {
+                continue;
+            }
+
+            $processedFields[$fieldName] = true;
+
             $fields[] = [
-                'name' => $match[1],
-                'type' => strtolower($match[2]),
-                'length' => isset($match[3]) ? trim($match[3], '()') : null,
+                'name' => $fieldName,
+                'type' => $fieldType,
+                'length' => $length,
+                'nullable' => !str_contains(strtoupper($constraints), 'NOT NULL'),
+                'primary' => str_contains(strtoupper($constraints), 'PRIMARY KEY'),
+                'auto_increment' => str_contains(strtoupper($constraints), 'AUTO_INCREMENT'),
+                'unique' => str_contains(strtoupper($constraints), 'UNIQUE'),
+                'default' => $this->extractDefault($constraints),
             ];
         }
-        
+
         return $fields;
     }
 
     private function extractRelationships(string $content): array
     {
         $relationships = [];
-        if (preg_match_all('/(\w+)_id.*?references?\s+(\w+)/i', $content, $matches, PREG_SET_ORDER)) {
+
+        // Match FOREIGN KEY constraints like: FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        if (preg_match_all('/FOREIGN\s+KEY\s*\((\w+)\)\s+REFERENCES\s+(\w+)\s*\((\w+)\)(?:\s+ON\s+(DELETE|UPDATE)\s+(\w+))?/i', $content, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $relationships[] = [
                     'type' => 'belongsTo',
+                    'foreign_key' => $match[1],
                     'related_table' => $match[2],
-                    'foreign_key' => $match[1] . '_id',
+                    'related_key' => $match[3],
+                    'on_delete' => isset($match[5]) && strtoupper($match[4]) === 'DELETE' ? strtoupper($match[5]) : null,
+                    'on_update' => isset($match[5]) && strtoupper($match[4]) === 'UPDATE' ? strtoupper($match[5]) : null,
                 ];
             }
         }
+
         return $relationships;
     }
 
     private function extractIndexes(string $content): array
     {
         $indexes = [];
-        if (preg_match_all('/index\s+on\s+(\w+)/i', $content, $matches)) {
-            $indexes = $matches[1];
+
+        // Match INDEX definitions like: INDEX idx_category (category_id),
+        if (preg_match_all('/INDEX\s+(\w+)\s*\(([^)]+)\)/i', $content, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $indexes[] = [
+                    'name' => $match[1],
+                    'columns' => array_map('trim', explode(',', $match[2])),
+                    'type' => 'index',
+                ];
+            }
         }
+
         return $indexes;
+    }
+
+    private function extractDefault(string $constraints): ?string
+    {
+        if (preg_match('/DEFAULT\s+([^,\s]+)/i', $constraints, $match)) {
+            return trim($match[1], "'\"");
+        }
+        return null;
     }
 
     private function parseGeneric(string $response): array
@@ -321,4 +407,88 @@ class AiResponseParser
     private function parseDeploymentConfig(string $response): array { return $this->parseGeneric($response); }
     private function parseDockerConfig(string $response): array { return $this->parseGeneric($response); }
     private function parseDesignSystem(string $response): array { return $this->parseGeneric($response); }
+    private function parseProjectPlanning(string $response): array
+    {
+        $phases = [];
+        $overview = [];
+
+        // Extract project overview
+        if (preg_match('/##\s*Project Overview(.*?)(?=##|\z)/s', $response, $matches)) {
+            $overviewText = trim($matches[1]);
+            preg_match_all('/\*\*(.*?):\*\*\s*(.+)/m', $overviewText, $overviewMatches, PREG_SET_ORDER);
+            foreach ($overviewMatches as $match) {
+                $overview[strtolower(str_replace(' ', '_', $match[1]))] = trim($match[2]);
+            }
+        }
+
+        // Extract phases
+        preg_match_all('/##\s*Phase\s*(\d+):\s*([^#]+)(.*?)(?=##\s*Phase|\z)/s', $response, $phaseMatches, PREG_SET_ORDER);
+
+        foreach ($phaseMatches as $match) {
+            $phaseNumber = $match[1];
+            $phaseName = trim($match[2]);
+            $phaseContent = $match[3];
+
+            $phase = [
+                'number' => (int)$phaseNumber,
+                'name' => $phaseName,
+                'timeline' => '',
+                'resources' => [],
+                'deliverables' => [],
+                'risks' => [],
+            ];
+
+            // Extract timeline
+            if (preg_match('/###\s*Timeline:\s*(.+)/m', $phaseContent, $timelineMatch)) {
+                $phase['timeline'] = trim($timelineMatch[1]);
+            }
+
+            // Extract resources
+            if (preg_match('/###\s*Resources:(.*?)(?=###|\z)/s', $phaseContent, $resourcesMatch)) {
+                preg_match_all('/^\s*-\s*(.+)/m', $resourcesMatch[1], $resourceItems);
+                $phase['resources'] = array_map('trim', $resourceItems[1]);
+            }
+
+            // Extract deliverables
+            if (preg_match('/###\s*Deliverables:(.*?)(?=###|\z)/s', $phaseContent, $deliverablesMatch)) {
+                preg_match_all('/^\s*-\s*(.+)/m', $deliverablesMatch[1], $deliverableItems);
+                $phase['deliverables'] = array_map('trim', $deliverableItems[1]);
+            }
+
+            // Extract risks
+            if (preg_match('/###\s*Risks:(.*?)(?=###|\z)/s', $phaseContent, $risksMatch)) {
+                preg_match_all('/^\s*-\s*(.+)/m', $risksMatch[1], $riskItems);
+                $phase['risks'] = array_map('trim', $riskItems[1]);
+            }
+
+            $phases[] = $phase;
+        }
+
+        return [
+            'overview' => $overview,
+            'phases' => $phases,
+            'total_phases' => count($phases),
+            'parsed_at' => now()->toISOString(),
+        ];
+    }
+
+    /**
+     * Get AI prompt template for specific content type and role
+     */
+    public static function getPromptTemplate(string $contentType, string $role): string
+    {
+        $templates = [
+            'user_stories' => [
+                'product_owner' => "Generate comprehensive user stories for this application:\n\n**Instructions:**\n1. Write stories in format: 'As a [user type], I want [goal] so that [benefit]'\n2. Include both user-facing and admin stories\n3. Add acceptance criteria for each story\n4. Group by feature areas\n\n**Required Sections:**\n- User Management Stories\n- Core Feature Stories\n- Admin Management Stories\n- Reporting Stories\n\n**Output Format:**\n```\n## User Management\n**Story 1:** As a user, I want to register an account so that I can access the system.\n**Acceptance Criteria:**\n- User can register with email and password\n- Email verification is required\n- User receives welcome email\n\n**Story 2:** As a user, I want to login so that I can access my account.\n**Acceptance Criteria:**\n- User can login with email/password\n- Remember me functionality\n- Password reset option\n```\n\nApplication Context: [Describe your application here]",
+            ],
+            'acceptance_criteria' => [
+                'product_owner' => "Create detailed acceptance criteria for the application features:\n\n**Instructions:**\n1. Use Given-When-Then format\n2. Cover happy path and edge cases\n3. Include validation rules\n4. Specify error handling\n\n**Format:**\n```\n## Feature: [Feature Name]\n\n**Scenario 1:** [Scenario Description]\nGiven [initial context]\nWhen [action is performed]\nThen [expected result]\n\n**Scenario 2:** [Error Scenario]\nGiven [error context]\nWhen [invalid action]\nThen [error handling]\n```\n\nApplication Context: [Describe your application here]",
+            ],
+            'database_schema' => [
+                'database_backend_developer' => "Design a comprehensive database schema:\n\n**Instructions:**\n1. Define all required tables with fields\n2. Specify data types and constraints\n3. Define relationships between tables\n4. Include indexes for performance\n5. Add timestamps and soft deletes where appropriate\n\n**Output Format:**\n```\n## Table: [table_name]\n**Fields:**\n- id (primary key, auto-increment)\n- field_name (data_type, constraints)\n- created_at (timestamp)\n- updated_at (timestamp)\n\n**Relationships:**\n- belongsTo: [related_table]\n- hasMany: [related_table]\n\n**Indexes:**\n- [field_name] (for performance)\n```\n\n**Required Tables:**\n[List the main entities for your application]\n\nApplication Context: [Describe your application here]",
+            ]
+        ];
+
+        return $templates[$contentType][$role] ?? "Generate {$contentType} content for the application.";
+    }
 }

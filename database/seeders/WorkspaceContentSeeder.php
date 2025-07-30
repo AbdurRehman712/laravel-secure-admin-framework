@@ -117,7 +117,7 @@ As a customer, I want to complete my purchase securely so that I can receive my 
         $databaseSchemaContent = ProjectWorkspaceContent::create([
             'project_id' => $project->id,
             'admin_id' => $admin->id,
-            'role' => 'database_admin',
+            'role' => 'database_backend_developer',
             'content_type' => 'database_schema',
             'title' => 'E-commerce Database Schema',
             'content' => [

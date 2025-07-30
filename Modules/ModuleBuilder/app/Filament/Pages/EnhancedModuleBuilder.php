@@ -15,9 +15,15 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use App\Models\Project;
+use App\Services\AiModuleGenerator;
+use App\Services\ExcelSchemaImporter;
+use Filament\Forms\Components\FileUpload;
+use Livewire\WithFileUploads;
 
 class EnhancedModuleBuilder extends Page
 {
+    use WithFileUploads;
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'Enhanced Module Builder';
@@ -32,6 +38,11 @@ class EnhancedModuleBuilder extends Page
     }
 
     public ?array $data = [];
+    public $showProjectSelection = false;
+    public $availableProjectsForSelection = [];
+    public $showExcelImport = false;
+    public $excelFile = null;
+    public $showCSVDownload = false;
 
     public function mount(): void
     {
@@ -229,10 +240,8 @@ class EnhancedModuleBuilder extends Page
                     ->placeholder('e.g., min:3|max:255'),
             ])
             ->table([
-                TableColumn::make('name')
-                    ->markAsRequired(),
-                TableColumn::make('type')
-                    ->markAsRequired(),
+                TableColumn::make('name'),
+                TableColumn::make('type'),
                 TableColumn::make('required'),
                 TableColumn::make('length'),
                 TableColumn::make('default'),
@@ -295,12 +304,9 @@ class EnhancedModuleBuilder extends Page
                     ->placeholder('Auto-generated if empty'),
             ])
             ->table([
-                TableColumn::make('from_model')
-                    ->markAsRequired(),
-                TableColumn::make('to_model')
-                    ->markAsRequired(),
-                TableColumn::make('type')
-                    ->markAsRequired(),
+                TableColumn::make('from_model'),
+                TableColumn::make('to_model'),
+                TableColumn::make('type'),
                 TableColumn::make('foreign_key'),
                 TableColumn::make('relationship_name'),
             ])
@@ -470,6 +476,186 @@ class EnhancedModuleBuilder extends Page
             ->send();
     }
 
+    public function hasProjectsWithSchemas(): bool
+    {
+        $projects = Project::all();
+
+        foreach ($projects as $project) {
+            try {
+                $generator = new AiModuleGenerator($project);
+                $reflection = new \ReflectionClass($generator);
+                $method = $reflection->getMethod('extractDatabaseSchemas');
+                $method->setAccessible(true);
+                $schemas = $method->invoke($generator);
+
+                if (!empty($schemas)) {
+                    return true;
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        return false;
+    }
+
+    public function getAvailableProjects(): array
+    {
+        $availableProjects = [];
+        $projects = Project::all();
+
+        foreach ($projects as $project) {
+            try {
+                $generator = new AiModuleGenerator($project);
+                $reflection = new \ReflectionClass($generator);
+                $method = $reflection->getMethod('extractDatabaseSchemas');
+                $method->setAccessible(true);
+                $schemas = $method->invoke($generator);
+
+                if (!empty($schemas)) {
+                    $tableCount = count($schemas[0]['tables'] ?? []);
+                    $availableProjects[$project->id] = "{$project->name} ({$tableCount} tables)";
+                }
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        return $availableProjects;
+    }
+
+    public function selectProjectAndFill(): void
+    {
+        $availableProjects = $this->getAvailableProjects();
+
+        if (empty($availableProjects)) {
+            Notification::make()
+                ->title('No Projects Available')
+                ->body('No projects with AI-generated database schemas found.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        // If only one project, auto-fill from it
+        if (count($availableProjects) === 1) {
+            $projectId = array_key_first($availableProjects);
+            $this->fillFromProject($projectId);
+            return;
+        }
+
+        // Show project selection modal
+        $this->availableProjectsForSelection = $availableProjects;
+        $this->showProjectSelection = true;
+    }
+
+    public function fillFromSelectedProject(int $projectId): void
+    {
+        $this->fillFromProject($projectId);
+        $this->showProjectSelection = false;
+        $this->availableProjectsForSelection = [];
+    }
+
+    public function closeProjectSelection(): void
+    {
+        $this->showProjectSelection = false;
+        $this->availableProjectsForSelection = [];
+    }
+
+    public function fillFromProject(int $projectId = null): void
+    {
+        try {
+            // If no project ID provided, get the first available project
+            $project = $projectId ? Project::find($projectId) : Project::first();
+
+            if (!$project) {
+                Notification::make()
+                    ->title('No Project Found')
+                    ->body('Please create a project first with AI-generated database schemas.')
+                    ->warning()
+                    ->send();
+                return;
+            }
+
+            $generator = new AiModuleGenerator($project);
+            $reflection = new \ReflectionClass($generator);
+
+            // Extract database schemas
+            $method = $reflection->getMethod('extractDatabaseSchemas');
+            $method->setAccessible(true);
+            $schemas = $method->invoke($generator);
+
+            if (empty($schemas)) {
+                Notification::make()
+                    ->title('No Database Schemas Found')
+                    ->body('The selected project does not have any AI-generated database schemas.')
+                    ->warning()
+                    ->send();
+                return;
+            }
+
+            // Prepare module data
+            $method2 = $reflection->getMethod('prepareModuleDataForMultipleTables');
+            $method2->setAccessible(true);
+            $moduleData = $method2->invoke($generator, $schemas[0]['tables'], []);
+
+            // Convert to form format
+            $formData = $this->convertModuleDataToFormFormat($moduleData, $project);
+
+            $this->form->fill($formData);
+
+            Notification::make()
+                ->title('Project Data Loaded!')
+                ->body("Module configuration has been loaded from '{$project->name}' project with " . count($moduleData['models']) . " models.")
+                ->success()
+                ->send();
+
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error Loading Project Data')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    private function convertModuleDataToFormFormat(array $moduleData, Project $project): array
+    {
+        $models = [];
+        $relationships = [];
+
+        foreach ($moduleData['models'] as $model) {
+            $models[] = [
+                'name' => $model['name'],
+                'table_name' => $model['table_name'],
+                'description' => "Generated from {$project->name} project",
+                'fields' => $model['fields']
+            ];
+
+            // Convert relationships
+            foreach ($model['relationships'] as $relationship) {
+                $relationships[] = [
+                    'from_model' => $model['name'],
+                    'to_model' => $relationship['related_model'],
+                    'type' => $relationship['type'],
+                    'foreign_key' => $relationship['foreign_key'],
+                    'relationship_name' => Str::camel($relationship['related_model'])
+                ];
+            }
+        }
+
+        return [
+            'module_name' => $moduleData['module_name'],
+            'module_description' => $moduleData['description'],
+            'models' => $models,
+            'relationships' => $relationships,
+            'generate_factory' => true,
+            'generate_seeder' => true,
+            'enable_global_search' => true,
+            'enable_bulk_actions' => true,
+        ];
+    }
+
     public function clearForm(): void
     {
         $this->form->fill([
@@ -482,5 +668,386 @@ class EnhancedModuleBuilder extends Page
             'enable_global_search' => true,
             'enable_bulk_actions' => true,
         ]);
+    }
+
+    public function downloadExcelTemplate()
+    {
+        $importer = new ExcelSchemaImporter();
+        $filename = $importer->generateSampleExcel();
+        $filepath = storage_path('app/public/' . $filename);
+
+        if (!file_exists($filepath)) {
+            Notification::make()
+                ->title('Error')
+                ->body('Template file could not be generated.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        // Return file download response
+        return response()->download($filepath, 'database_schema_template.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function downloadCSVTemplates()
+    {
+        $importer = new ExcelSchemaImporter();
+        $files = $importer->generateSampleCSV();
+
+        // Create a ZIP file containing all CSV templates
+        $zipFilename = 'database_schema_csv_templates_' . date('Y-m-d_H-i-s') . '.zip';
+        $zipPath = storage_path('app/public/demo/' . $zipFilename);
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE) === TRUE) {
+            foreach ($files as $type => $relativePath) {
+                $fullPath = storage_path('app/public/' . $relativePath);
+                if (file_exists($fullPath)) {
+                    $zip->addFile($fullPath, basename($fullPath));
+                }
+            }
+            $zip->close();
+
+            if (file_exists($zipPath)) {
+                return response()->download($zipPath, 'database_schema_csv_templates.zip', [
+                    'Content-Type' => 'application/zip',
+                ]);
+            }
+        }
+
+        Notification::make()
+            ->title('Error')
+            ->body('CSV templates could not be generated.')
+            ->danger()
+            ->send();
+    }
+
+    public function loadFromERD()
+    {
+        // Get available ERD projects
+        $erdProjects = \Modules\ERDDesigner\app\Models\ErdProject::where('created_by', auth()->id())
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        if ($erdProjects->isEmpty()) {
+            Notification::make()
+                ->title('No ERD Projects Found')
+                ->body('Please create an ERD project first using the ERD Designer.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        // For now, load the most recent project
+        $erdProject = $erdProjects->first();
+
+        $this->importFromERD($erdProject);
+    }
+
+    public function importFromERD(\Modules\ERDDesigner\app\Models\ErdProject $erdProject)
+    {
+        try {
+            // Load ERD project data
+            $tables = $erdProject->tables()->with(['fields' => function($query) {
+                $query->orderBy('order');
+            }])->get();
+
+            $relationships = $erdProject->relationships()->with([
+                'sourceTable', 'targetTable', 'sourceField', 'targetField'
+            ])->get();
+
+            // Convert ERD data to Module Builder format
+            $models = [];
+            $moduleRelationships = [];
+
+            foreach ($tables as $table) {
+                $formattedFields = [];
+
+                foreach ($table->fields as $field) {
+                    // Skip auto-generated fields
+                    if (in_array($field->name, ['id', 'created_at', 'updated_at'])) {
+                        continue;
+                    }
+
+                    $formattedFields[] = [
+                        'name' => $field->name,
+                        'type' => $this->mapSqlToLaravelType($field->type),
+                        'required' => !$field->is_nullable,
+                        'length' => $field->length,
+                        'default' => $field->default_value,
+                        'display_name' => $field->display_name ?: ucfirst($field->name),
+                        'form_type' => $field->form_type,
+                        'validation_rules' => $field->validation_rules,
+                    ];
+                }
+
+                $models[] = [
+                    'name' => Str::studly(Str::singular($table->name)),
+                    'table_name' => $table->name,
+                    'description' => $table->description ?: "Manage {$table->display_name}",
+                    'fields' => $formattedFields,
+                    'seeder_data' => []
+                ];
+            }
+
+            // Convert relationships
+            foreach ($relationships as $relationship) {
+                if ($relationship->sourceTable && $relationship->targetTable) {
+                    $moduleRelationships[] = [
+                        'from_model' => Str::studly(Str::singular($relationship->sourceTable->name)),
+                        'to_model' => Str::studly(Str::singular($relationship->targetTable->name)),
+                        'type' => $this->mapErdToLaravelRelationType($relationship->type),
+                        'foreign_key' => $relationship->sourceField ? $relationship->sourceField->name : null,
+                        'relationship_name' => Str::camel(Str::singular($relationship->targetTable->name))
+                    ];
+                }
+            }
+
+            // Fill the form with imported data
+            $this->form->fill([
+                'module_name' => Str::studly($erdProject->name),
+                'description' => $erdProject->description ?: 'Module imported from ERD Designer',
+                'models' => $models,
+                'relationships' => $moduleRelationships
+            ]);
+
+            Notification::make()
+                ->title('ERD Import Successful')
+                ->body("Imported {$erdProject->name} with " . count($models) . ' tables and ' . count($moduleRelationships) . ' relationships.')
+                ->success()
+                ->duration(5000)
+                ->send();
+
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('ERD Import Failed')
+                ->body('Error: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    private function mapSqlToLaravelType(string $sqlType): string
+    {
+        $typeMap = [
+            'varchar' => 'string',
+            'char' => 'string',
+            'text' => 'text',
+            'mediumtext' => 'text',
+            'longtext' => 'text',
+            'tinytext' => 'text',
+            'int' => 'integer',
+            'bigint' => 'bigInteger',
+            'tinyint' => 'boolean',
+            'smallint' => 'integer',
+            'mediumint' => 'integer',
+            'decimal' => 'decimal',
+            'float' => 'float',
+            'double' => 'double',
+            'date' => 'date',
+            'datetime' => 'datetime',
+            'timestamp' => 'timestamp',
+            'time' => 'time',
+            'year' => 'integer',
+            'enum' => 'enum',
+            'set' => 'string',
+            'json' => 'json',
+            'boolean' => 'boolean'
+        ];
+
+        return $typeMap[$sqlType] ?? 'string';
+    }
+
+    private function mapErdToLaravelRelationType(string $erdType): string
+    {
+        $typeMap = [
+            'one_to_one' => 'hasOne',
+            'one_to_many' => 'hasMany',
+            'many_to_one' => 'belongsTo',
+            'many_to_many' => 'belongsToMany'
+        ];
+
+        return $typeMap[$erdType] ?? 'belongsTo';
+    }
+
+    public function showCSVDownloadModal(): void
+    {
+        $this->showCSVDownload = true;
+    }
+
+    public function hideCSVDownloadModal(): void
+    {
+        $this->showCSVDownload = false;
+    }
+
+    public function showExcelImportModal(): void
+    {
+        $this->showExcelImport = true;
+    }
+
+    public function hideExcelImportModal(): void
+    {
+        $this->showExcelImport = false;
+        $this->excelFile = null;
+    }
+
+    public function importFromExcel(): void
+    {
+        if (!$this->excelFile) {
+            Notification::make()
+                ->title('No File Selected')
+                ->body('Please select an Excel file to import.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        try {
+            $importer = new ExcelSchemaImporter();
+
+            // Handle Livewire file upload
+            if (is_object($this->excelFile) && method_exists($this->excelFile, 'getRealPath')) {
+                // This is a Livewire UploadedFile object
+                $filePath = $this->excelFile->getRealPath();
+            } else {
+                // Handle string paths (for demo files or direct paths)
+                $possiblePaths = [
+                    storage_path('app/public/' . $this->excelFile),
+                    storage_path('app/livewire-tmp/' . $this->excelFile),
+                    storage_path('app/public/demo/' . $this->excelFile),
+                    $this->excelFile // Direct path
+                ];
+
+                $filePath = null;
+                foreach ($possiblePaths as $path) {
+                    if (file_exists($path)) {
+                        $filePath = $path;
+                        break;
+                    }
+                }
+            }
+
+            if (!$filePath || !file_exists($filePath)) {
+                $debugInfo = [
+                    'excelFile_type' => gettype($this->excelFile),
+                    'excelFile_value' => is_object($this->excelFile) ? get_class($this->excelFile) : $this->excelFile,
+                    'checked_paths' => isset($possiblePaths) ? $possiblePaths : ['N/A'],
+                    'final_path' => $filePath ?? 'null'
+                ];
+
+                throw new \Exception('File not found. Debug info: ' . json_encode($debugInfo, JSON_PRETTY_PRINT));
+            }
+
+            // Use the new parseFile method that handles both Excel and CSV
+            $data = $importer->parseFile($filePath);
+
+            if (empty($data['tables']) || empty($data['fields'])) {
+                throw new \Exception('Invalid Excel format. Please use the provided template.');
+            }
+
+            // Convert parsed data to form format
+            $models = [];
+            $relationships = [];
+
+            foreach ($data['tables'] as $table) {
+                $tableFields = array_filter($data['fields'], function($field) use ($table) {
+                    return $field['table_name'] === $table['name'];
+                });
+
+                $formattedFields = [];
+                foreach ($tableFields as $field) {
+                    // Skip timestamp fields that will be auto-added by Laravel
+                    if (in_array($field['name'], ['id', 'created_at', 'updated_at'])) {
+                        continue;
+                    }
+
+                    // Process relationships first
+                    if (!empty($field['relationship']) && !empty($field['related_table'])) {
+                        $relationships[] = [
+                            'from_model' => Str::studly(Str::singular($table['name'])),
+                            'to_model' => Str::studly(Str::singular($field['related_table'])),
+                            'type' => $field['relationship'],
+                            'foreign_key' => $field['name'],
+                            'relationship_name' => Str::camel(Str::singular($field['related_table']))
+                        ];
+
+                        // Skip adding foreign key fields to the regular fields array
+                        // They will be handled by the foreign key generation
+                        if ($field['relationship'] === 'belongsTo' && str_ends_with($field['name'], '_id')) {
+                            continue;
+                        }
+                    }
+
+                    $formattedFields[] = [
+                        'name' => $field['name'],
+                        'type' => $this->mapFieldType($field['type']),
+                        'required' => !$field['nullable'], // Convert nullable to required (opposite)
+                        'length' => $field['length'] ?: null,
+                        'default' => $field['default'] ?: null,
+                        'display_name' => $field['display_name'],
+                        'form_type' => $field['form_type'],
+                        'validation_rules' => $field['validation'] ?: null,
+                    ];
+                }
+
+                $models[] = [
+                    'name' => Str::studly(Str::singular($table['name'])),
+                    'table_name' => $table['name'],
+                    'description' => $table['description'] ?: "Manage {$table['display_name']}",
+                    'fields' => $formattedFields,
+                    'seeder_data' => $data['seeder_data'][$table['name']] ?? []
+                ];
+            }
+
+            // Fill the form with imported data
+            $this->form->fill([
+                'module_name' => 'ImportedModule',
+                'description' => 'Module imported from Excel schema',
+                'models' => $models,
+                'relationships' => $relationships
+            ]);
+
+            $this->hideExcelImportModal();
+
+            Notification::make()
+                ->title('Excel Import Successful')
+                ->body(count($models) . ' tables imported successfully. Review and customize as needed.')
+                ->success()
+                ->duration(5000)
+                ->send();
+
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Import Failed')
+                ->body('Error: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    private function mapFieldType(string $excelType): string
+    {
+        return match (strtolower($excelType)) {
+            'varchar' => 'string',
+            'text' => 'text',
+            'integer', 'int' => 'integer',
+            'bigint' => 'integer', // Changed from 'bigInteger' to 'integer'
+            'decimal', 'float', 'double' => 'decimal',
+            'boolean', 'bool' => 'boolean',
+            'timestamp' => 'timestamp',
+            'datetime' => 'datetime',
+            'date' => 'date',
+            'json' => 'json',
+            'enum' => 'enum',
+            'file' => 'file',
+            'image' => 'image',
+            'email' => 'email',
+            'url' => 'url',
+            'password' => 'password',
+            'rich_text' => 'rich_text',
+            default => 'string'
+        };
     }
 }

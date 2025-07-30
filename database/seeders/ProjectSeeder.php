@@ -13,9 +13,14 @@ class ProjectSeeder extends Seeder
      */
     public function run(): void
     {
+        // Clean up existing projects to avoid slug conflicts
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Project::truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
         // Get the first admin user
         $admin = Admin::first();
-        
+
         if (!$admin) {
             $this->command->error('No admin users found. Please run the admin seeder first.');
             return;
@@ -30,8 +35,8 @@ class ProjectSeeder extends Seeder
                 'status' => 'planning',
                 'created_by' => $admin->id,
                 'settings' => [
-                    'framework' => 'Laravel 11',
-                    'frontend' => 'Livewire 3 + Alpine.js',
+                    'framework' => 'Laravel 12',
+                    'frontend' => 'Livewire 4 + Alpine.js',
                     'styling' => 'Tailwind CSS',
                     'database' => 'MySQL',
                 ],
@@ -55,8 +60,8 @@ class ProjectSeeder extends Seeder
                 'status' => 'development',
                 'created_by' => $admin->id,
                 'settings' => [
-                    'framework' => 'Laravel 11',
-                    'frontend' => 'Livewire 3 + Alpine.js',
+                    'framework' => 'Laravel 12',
+                    'frontend' => 'Livewire 4 + Alpine.js',
                     'styling' => 'Tailwind CSS',
                     'database' => 'PostgreSQL',
                 ],
@@ -80,8 +85,8 @@ class ProjectSeeder extends Seeder
                 'status' => 'planning',
                 'created_by' => $admin->id,
                 'settings' => [
-                    'framework' => 'Laravel 11',
-                    'frontend' => 'Livewire 3 + Alpine.js',
+                    'framework' => 'Laravel 12',
+                    'frontend' => 'Livewire 4 + Alpine.js',
                     'styling' => 'Tailwind CSS',
                     'database' => 'MySQL',
                 ],

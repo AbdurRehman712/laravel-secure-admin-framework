@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Project;
 use App\Models\ProjectWorkspaceContent;
+use App\Services\AiModuleGenerator;
 use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -27,6 +28,13 @@ class ProjectWorkspace extends Page implements HasForms
     public ?Project $project = null;
     public string $currentRole = 'product_owner';
     public array $roleProgress = [];
+
+    protected $listeners = [
+        'content-created' => 'refreshContent',
+        'showContentDetails' => 'showContentDetails',
+        'editContent' => 'editContent',
+        'generateCode' => 'generateCode'
+    ];
 
     public function mount(): void
     {
@@ -117,6 +125,9 @@ class ProjectWorkspace extends Page implements HasForms
     {
         $this->currentRole = $role;
         $this->loadRoleProgress();
+
+        // Force re-render of the page to update Livewire components with new role
+        $this->dispatch('role-switched', role: $role);
     }
 
     public function getRoleDisplayName(string $role): string
@@ -136,11 +147,8 @@ class ProjectWorkspace extends Page implements HasForms
     {
         return [
             'product_owner' => 'Product Owner',
-            'designer' => 'Designer',
-            'database_admin' => 'Database Admin',
-            'frontend_developer' => 'Frontend Developer',
-            'backend_developer' => 'Backend Developer',
-            'devops' => 'DevOps',
+            'database_backend_developer' => 'Database & Backend Developer',
+            'project_manager' => 'Project Manager',
         ];
     }
 
@@ -148,11 +156,8 @@ class ProjectWorkspace extends Page implements HasForms
     {
         return match ($role) {
             'product_owner' => 'Define user stories, acceptance criteria, and project requirements using AI tools.',
-            'designer' => 'Create wireframes, design systems, and UI/UX specifications with AI assistance.',
-            'database_admin' => 'Design database schemas, relationships, and data structures using AI.',
-            'frontend_developer' => 'Build Livewire components, Blade templates, and frontend interactions.',
-            'backend_developer' => 'Create Laravel controllers, models, APIs, and business logic.',
-            'devops' => 'Configure deployment, Docker containers, and CI/CD pipelines.',
+            'database_backend_developer' => 'Design database schemas, create Laravel models, controllers, APIs, and implement business logic.',
+            'project_manager' => 'Manage project coordination, deployment configurations, and oversee development process.',
             default => 'Collaborate on the project development process.',
         };
     }
@@ -172,54 +177,33 @@ class ProjectWorkspace extends Page implements HasForms
                     'example' => 'Create detailed acceptance criteria for the following user story: As a customer, I want to add products to my shopping cart so that I can purchase multiple items at once. Use Given-When-Then format.',
                 ],
             ],
-            'designer' => [
-                'wireframes' => [
-                    'title' => 'Generate Wireframes',
-                    'prompt' => 'Create detailed wireframe descriptions for [PAGE_NAME] page of a [PROJECT_TYPE] application. Include layout, components, and user interactions.',
-                    'example' => 'Create detailed wireframe descriptions for product listing page of a e-commerce application. Include layout, components, and user interactions.',
-                ],
-                'design_system' => [
-                    'title' => 'Create Design System',
-                    'prompt' => 'Generate a comprehensive design system for a [PROJECT_TYPE] application including color palette, typography, spacing, and component guidelines.',
-                    'example' => 'Generate a comprehensive design system for a e-commerce application including color palette, typography, spacing, and component guidelines.',
-                ],
-            ],
-            'database_admin' => [
+            'database_backend_developer' => [
                 'database_schema' => [
                     'title' => 'Generate Database Schema',
                     'prompt' => 'Create a complete database schema for a [PROJECT_TYPE] application with the following entities: [ENTITIES]. Include relationships, indexes, and constraints.',
                     'example' => 'Create a complete database schema for a e-commerce application with the following entities: users, products, categories, orders, order_items, payments. Include relationships, indexes, and constraints.',
-                ],
-            ],
-            'frontend_developer' => [
-                'frontend_components' => [
-                    'title' => 'Generate Livewire Components',
-                    'prompt' => 'Create Livewire 3 components for [FEATURE] functionality in a Laravel application. Include component class, Blade template, and Alpine.js interactions.',
-                    'example' => 'Create Livewire 3 components for shopping cart functionality in a Laravel application. Include component class, Blade template, and Alpine.js interactions.',
-                ],
-            ],
-            'backend_developer' => [
-                'backend_logic' => [
-                    'title' => 'Generate Laravel Controllers',
-                    'prompt' => 'Create Laravel 11 controllers and models for [FEATURE] with proper validation, relationships, and API endpoints.',
-                    'example' => 'Create Laravel 11 controllers and models for order management with proper validation, relationships, and API endpoints.',
                 ],
                 'api_endpoints' => [
                     'title' => 'Generate API Endpoints',
                     'prompt' => 'Create RESTful API endpoints for [RESOURCE] management including CRUD operations, validation, and proper HTTP responses.',
                     'example' => 'Create RESTful API endpoints for product management including CRUD operations, validation, and proper HTTP responses.',
                 ],
+                'backend_logic' => [
+                    'title' => 'Generate Backend Logic',
+                    'prompt' => 'Create Laravel 11 controllers and models for [FEATURE] with proper validation, relationships, and API endpoints.',
+                    'example' => 'Create Laravel 11 controllers and models for order management with proper validation, relationships, and API endpoints.',
+                ],
             ],
-            'devops' => [
-                'docker_config' => [
-                    'title' => 'Generate Docker Configuration',
-                    'prompt' => 'Create Docker configuration for a Laravel 11 application with [SERVICES]. Include Dockerfile, docker-compose.yml, and environment setup.',
-                    'example' => 'Create Docker configuration for a Laravel 11 application with MySQL, Redis, and Nginx. Include Dockerfile, docker-compose.yml, and environment setup.',
+            'project_manager' => [
+                'project_planning' => [
+                    'title' => 'Create Project Plan',
+                    'prompt' => 'Create a comprehensive project plan for a [PROJECT_TYPE] application with phases, milestones, and risk assessment.',
+                    'example' => 'Create a comprehensive project plan for an e-commerce platform with phases, milestones, and risk assessment.',
                 ],
                 'deployment_config' => [
-                    'title' => 'Generate CI/CD Pipeline',
-                    'prompt' => 'Create GitHub Actions workflow for deploying a Laravel application to [PLATFORM] with testing, building, and deployment stages.',
-                    'example' => 'Create GitHub Actions workflow for deploying a Laravel application to AWS with testing, building, and deployment stages.',
+                    'title' => 'Generate Deployment Configuration',
+                    'prompt' => 'Create Docker configuration for a Laravel 11 application with [SERVICES]. Include Dockerfile, docker-compose.yml, and environment setup.',
+                    'example' => 'Create Docker configuration for a Laravel 11 application with MySQL, Redis, and Nginx. Include Dockerfile, docker-compose.yml, and environment setup.',
                 ],
             ],
             default => [],
@@ -290,6 +274,63 @@ class ProjectWorkspace extends Page implements HasForms
             Notification::make()
                 ->title('Module Generation Failed')
                 ->body('There was an error generating modules: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function showContentDetails($contentId): void
+    {
+        $content = ProjectWorkspaceContent::findOrFail($contentId);
+
+        Notification::make()
+            ->title('Content Details')
+            ->body("Viewing: {$content->title}")
+            ->info()
+            ->send();
+
+        // TODO: Implement content details modal/page
+    }
+
+    public function editContent($contentId): void
+    {
+        $content = ProjectWorkspaceContent::findOrFail($contentId);
+
+        Notification::make()
+            ->title('Edit Content')
+            ->body("Editing: {$content->title}")
+            ->info()
+            ->send();
+
+        // TODO: Implement content editing functionality
+    }
+
+    public function generateCode($contentId): void
+    {
+        $content = ProjectWorkspaceContent::findOrFail($contentId);
+
+        try {
+            // Generate code from this specific content
+            $generator = new AiModuleGenerator($this->project);
+            $modules = $generator->generateModules();
+
+            if (empty($modules)) {
+                Notification::make()
+                    ->title('No Modules Generated')
+                    ->body('No new modules were generated from this content. Check the content format and try again.')
+                    ->warning()
+                    ->send();
+            } else {
+                Notification::make()
+                    ->title('Code Generated Successfully!')
+                    ->body('Generated ' . count($modules) . ' module(s) from: ' . $content->title)
+                    ->success()
+                    ->send();
+            }
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Code Generation Failed')
+                ->body('Error generating code: ' . $e->getMessage())
                 ->danger()
                 ->send();
         }

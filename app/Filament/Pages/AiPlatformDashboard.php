@@ -86,11 +86,8 @@ class AiPlatformDashboard extends Page
     {
         return [
             'product_owner' => 'Product Owner',
-            'designer' => 'Designer',
-            'database_admin' => 'Database Admin',
-            'frontend_developer' => 'Frontend Developer',
-            'backend_developer' => 'Backend Developer',
-            'devops' => 'DevOps',
+            'database_backend_developer' => 'Database & Backend Developer',
+            'project_manager' => 'Project Manager',
         ];
     }
 

@@ -38,6 +38,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('👥 Seeding public users and roles...');
         $this->call(PublicUserSeeder::class);
 
+        // Seed projects with comprehensive AI content
+        $this->command->info('📋 Seeding projects with AI-generated content...');
+        $this->call(ProjectWithContentSeeder::class);
+
         $this->command->info('🎉 Database seeding completed successfully!');
     }
 }
