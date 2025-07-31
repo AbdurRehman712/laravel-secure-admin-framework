@@ -24,8 +24,10 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function map(): void
     {
-        $this->mapApiRoutes();
-        $this->mapWebRoutes();
+        // Temporarily disable API routes to fix class conflict
+        // $this->mapApiRoutes();
+        // Temporarily disable web routes to fix class conflict
+        // $this->mapWebRoutes();
     }
 
     /**

@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .container {
+    @apply px-4;
+  }
+  
+  .main-navigation ul {
+    @apply flex gap-4;
+  }
+  
+  .main-navigation li.active a {
+    @apply font-bold;
+  }
+}

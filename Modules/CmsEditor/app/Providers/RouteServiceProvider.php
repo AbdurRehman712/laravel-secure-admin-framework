@@ -1,13 +1,13 @@
 <?php
 
-namespace Modules\Core\app\Providers;
+namespace Modules\CmsEditor\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Route;
 
 class RouteServiceProvider extends ServiceProvider
 {
-    protected string $name = 'Core';
+    protected string $name = 'CmsEditor';
 
     /**
      * Called before routes are registered.
@@ -24,8 +24,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function map(): void
     {
-        // Temporarily disable API routes to fix class conflict
-        // $this->mapApiRoutes();
+        $this->mapApiRoutes();
         $this->mapWebRoutes();
     }
 

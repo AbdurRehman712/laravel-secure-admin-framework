@@ -1,0 +1,9 @@
+description = "Site navigation partial"
+==
+<nav class="main-navigation">
+    <ul>
+        <li class="{{ this.page.id == 'home' ? 'active' : '' }}"><a href="{{ 'home'|page }}">Home</a></li>
+        <li class="{{ this.page.id == 'about' ? 'active' : '' }}"><a href="{{ 'about'|page }}">About</a></li>
+        <li class="{{ this.page.id == 'contact' ? 'active' : '' }}"><a href="{{ 'contact'|page }}">Contact</a></li>
+    </ul>
+</nav>

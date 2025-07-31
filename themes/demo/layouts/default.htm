@@ -1,0 +1,38 @@
+description = "Default layout"
+==
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>{{ this.page.title }} - {{ this.theme.name }}</title>
+        <meta name="description" content="{{ this.page.meta_description }}">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="{{ this.theme.author }}">
+        <meta name="generator" content="CMS">
+        <link rel="stylesheet" href="{{ 'assets/css/styles.css'|theme }}">
+        {% styles %}
+    </head>
+    <body>
+        <header>
+            <div class="container mx-auto py-4">
+                <h1>{{ this.theme.name }}</h1>
+                {% partial 'site/navigation' %}
+            </div>
+        </header>
+
+        <main class="container mx-auto py-8">
+            <section id="content">
+                {% page %}
+            </section>
+        </main>
+
+        <footer class="bg-gray-100 py-8">
+            <div class="container mx-auto">
+                <p>&copy; {{ "now"|date("Y") }} {{ this.theme.author }}</p>
+            </div>
+        </footer>
+
+        <script src="{{ 'assets/js/app.js'|theme }}"></script>
+        {% scripts %}
+    </body>
+</html>

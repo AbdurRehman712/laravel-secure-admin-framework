@@ -1,0 +1,19 @@
+description = "User dashboard menu"
+==
+<ul class="user-menu">
+    <li class="{{ this.page.id == 'dashboard' ? 'active' : '' }}">
+        <a href="{{ 'dashboard'|page }}">Dashboard</a>
+    </li>
+    <li class="{{ this.page.id == 'profile' ? 'active' : '' }}">
+        <a href="{{ 'profile'|page }}">Profile</a>
+    </li>
+    <li class="{{ this.page.id == 'settings' ? 'active' : '' }}">
+        <a href="{{ 'settings'|page }}">Settings</a>
+    </li>
+    <li>
+        <a href="javascript:document.getElementById('logout-form').submit();">Logout</a>
+        <form id="logout-form" action="{{ 'logout'|page }}" method="post" style="display: none;">
+            {{ csrf_field() }}
+        </form>
+    </li>
+</ul>

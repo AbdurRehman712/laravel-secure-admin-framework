@@ -1,0 +1,11 @@
+{
+    "name": "CmsEditor",
+    "alias": "cmseditor",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\CmsEditor\\Providers\\CmsEditorServiceProvider"
+    ],
+    "files": []
+}

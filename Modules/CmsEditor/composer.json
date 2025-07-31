@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/cmseditor",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\CmsEditor\\": "app/",
+            "Modules\\CmsEditor\\Database\\Factories\\": "database/factories/",
+            "Modules\\CmsEditor\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\CmsEditor\\Tests\\": "tests/"
+        }
+    }
+}

@@ -27,5 +27,6 @@
     "Ecommerce": true,
     "ImportedModule": true,
     "CRM": true,
-    "ERDDesigner": true
+    "ERDDesigner": true,
+    "CmsEditor": true
 }

@@ -48,6 +48,12 @@ class AdminPanelProvider extends PanelProvider
             ->tap(function ($panel) {
                 $this->discoverModuleResources($panel);
             })
+            
+            // Explicitly register the CmsEditor resources
+            ->resources([
+                \Modules\CmsEditor\app\Filament\Resources\PageResource::class,
+                \Modules\CmsEditor\app\Filament\Resources\ThemeResource::class,
+            ])
 
             ->discoverPages(in: base_path('Modules/ModuleBuilder/app/Filament/Pages'), for: 'Modules\ModuleBuilder\app\Filament\Pages')
             ->discoverPages(in: base_path('Modules/ERDDesigner/app/Filament/Pages'), for: 'Modules\ERDDesigner\app\Filament\Pages')
@@ -127,7 +133,7 @@ class AdminPanelProvider extends PanelProvider
             $moduleName = basename($directory);
 
             // Skip system modules that are handled separately
-            if (in_array($moduleName, ['Core', 'PublicUser', 'ModuleBuilder', 'ERDDesigner'])) {
+            if (in_array($moduleName, ['Core', 'PublicUser', 'ModuleBuilder', 'ERDDesigner', 'CmsEditor'])) {
                 continue;
             }
 
