@@ -36,6 +36,16 @@ class EnhancedModuleGenerator
         
         // 5. Generate additional features
         $this->generateAdditionalFeatures();
+
+        // 5b. Optional: Generate Public facing scaffolds (SaaS)
+        if ($this->data['generate_public'] ?? false) {
+            $this->generatePublicScaffold();
+        }
+
+        // 5c. Optional: Generate API scaffolds
+        if ($this->data['generate_api'] ?? false) {
+            $this->generateApiScaffold();
+        }
         
         // 6. Register module and run migrations
         $this->registerAndMigrate();
@@ -47,11 +57,15 @@ class EnhancedModuleGenerator
             'app/Models',
             'app/Filament/Resources',
             'app/Http/Controllers',
+            'app/Http/Controllers/PublicSite',
+            'app/Http/Controllers/API',
             'app/Providers',
             'database/migrations',
             'database/factories',
             'database/seeders',
             'routes',
+            'routes/public',
+            'routes/api',
             'tests/Feature',
             'tests/Unit',
         ];
@@ -100,6 +114,14 @@ class {$this->moduleName}ServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \$this->loadMigrationsFrom(module_path('{$this->moduleName}', 'database/migrations'));
+
+        // Load module routes
+        if (file_exists(module_path('{$this->moduleName}', 'routes/public/web.php'))) {
+            \$this->loadRoutesFrom(module_path('{$this->moduleName}', 'routes/public/web.php'));
+        }
+        if (file_exists(module_path('{$this->moduleName}', 'routes/api/api.php'))) {
+            \$this->loadRoutesFrom(module_path('{$this->moduleName}', 'routes/api/api.php'));
+        }
     }
 
     public function register(): void
@@ -1045,6 +1067,129 @@ class Edit{$modelName} extends EditRecord
         }
     }
 
+    private function generatePublicScaffold(): void
+    {
+        // Basic Public Controller per primary model and routes
+        $primaryModel = Str::studly($this->data['models'][0]['name'] ?? 'Item');
+
+    $controllerContent = "<?php
+
+namespace Modules\\{$this->moduleName}\\app\\Http\\Controllers\\PublicSite;
+
+use App\\Http\\Controllers\\Controller;
+use Illuminate\\Http\\Request;
+use Illuminate\\View\\View;
+use App\\Services\\ThemeRenderer;
+use Modules\\{$this->moduleName}\\app\\Models\\{$primaryModel};
+
+class Public{$primaryModel}Controller extends Controller
+{
+    public function index(Request \$request, ThemeRenderer \$renderer): View
+    {
+        // TODO: apply visibility/policy filters
+        \$items = {$primaryModel}::query()->latest()->paginate(12);
+        return \$renderer->render(strtolower('{$this->moduleName}') . '-list', [
+            'title' => '{$primaryModel} List',
+            'items' => \$items,
+        ]);
+    }
+
+    public function show(string \$slug, Request \$request, ThemeRenderer \$renderer): View
+    {
+        \$item = {$primaryModel}::where('slug', \$slug)->firstOrFail();
+        return \$renderer->render(strtolower('{$this->moduleName}') . '-detail', [
+            'title' => \$item->name ?? '{$primaryModel}',
+            'item' => \$item,
+        ]);
+    }
+}
+";
+
+    File::put("{$this->modulePath}/app/Http/Controllers/PublicSite/Public{$primaryModel}Controller.php", $controllerContent);
+
+        // Routes
+        $routesContent = "<?php
+
+use Illuminate\\Support\\Facades\\Route;
+use Modules\\{$this->moduleName}\\app\\Http\\Controllers\\PublicSite\\Public{$primaryModel}Controller;
+
+Route::prefix('" . Str::kebab($this->moduleName) . "')->name('" . Str::kebab($this->moduleName) . ".')->group(function () {
+    Route::get('/', [Public{$primaryModel}Controller::class, 'index'])->name('index');
+    Route::get('/{slug}', [Public{$primaryModel}Controller::class, 'show'])->name('show');
+});
+";
+
+        File::put("{$this->modulePath}/routes/public/web.php", $routesContent);
+
+    // Theme placeholders (demo theme by default)
+    $this->generatePublicThemePlaceholders();
+    }
+
+    private function generateApiScaffold(): void
+    {
+        $primaryModel = Str::studly($this->data['models'][0]['name'] ?? 'Item');
+        $modelVar = Str::camel($primaryModel);
+
+        $controllerContent = "<?php
+
+namespace Modules\\{$this->moduleName}\\app\\Http\\Controllers\\API;
+
+use App\\Http\\Controllers\\Controller;
+use Illuminate\\Http\\Request;
+use Illuminate\\Http\\JsonResponse;
+use Modules\\{$this->moduleName}\\app\\Models\\{$primaryModel};
+
+class {$primaryModel}ApiController extends Controller
+{
+    public function index(Request \$request): JsonResponse
+    {
+        \$query = {$primaryModel}::query();
+        // TODO: filters/search/sort
+        \$items = \$query->paginate(\$request->integer('per_page', 15));
+        return response()->json(\$items);
+    }
+
+    public function show({$primaryModel} \$$modelVar): JsonResponse
+    {
+        return response()->json(\$$modelVar);
+    }
+}
+";
+
+        File::put("{$this->modulePath}/app/Http/Controllers/API/{$primaryModel}ApiController.php", $controllerContent);
+
+    $routesContent = "<?php
+
+use Illuminate\\Support\\Facades\\Route;
+use Modules\\{$this->moduleName}\\app\\Http\\Controllers\\API\\{$primaryModel}ApiController;
+
+Route::middleware('api')->prefix('api/v1/" . Str::kebab($this->moduleName) . "')->name('api.v1." . Str::kebab($this->moduleName) . ".')->group(function () {
+    Route::get('/', [{$primaryModel}ApiController::class, 'index'])->name('index');
+    Route::get('/{" . Str::camel($primaryModel) . "}', [{$primaryModel}ApiController::class, 'show'])->name('show');
+});
+";
+
+        File::put("{$this->modulePath}/routes/api/api.php", $routesContent);
+    }
+
+    private function generatePublicThemePlaceholders(string $theme = 'demo'): void
+    {
+        $moduleSlug = Str::kebab($this->moduleName);
+        $pagesPath = base_path("themes/{$theme}/pages");
+        File::ensureDirectoryExists($pagesPath);
+
+        $listPath = base_path("themes/{$theme}/pages/{$moduleSlug}-list.blade.php");
+        $detailPath = base_path("themes/{$theme}/pages/{$moduleSlug}-detail.blade.php");
+
+        if (!file_exists($listPath)) {
+            File::put($listPath, "<div class=\"container mx-auto px-4 py-8\">\n    <h1 class=\"text-2xl font-semibold mb-4\">{{ \$title ?? ucfirst('{$moduleSlug}') }} List</h1>\n    <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4\">\n        @forelse(\$items as \$item)\n            <a href=\"/{{ '{$moduleSlug}' }}/{{ \$item->slug ?? \$item->id }}\" class=\"block p-4 border rounded hover:bg-gray-50\">\n                <div class=\"font-medium\">{{ \$item->name ?? \$item->title ?? 'Item' }}</div>\n                <div class=\"text-sm text-gray-500\">{{ \$item->created_at?->diffForHumans() }}</div>\n            </a>\n        @empty\n            <div>No records yet.</div>\n        @endforelse\n    </div>\n    <div class=\"mt-6\">{{ \$items->links() }}</div>\n</div>\n");
+        }
+
+        if (!file_exists($detailPath)) {
+            File::put($detailPath, "<div class=\"container mx-auto px-4 py-8\">\n    <h1 class=\"text-2xl font-semibold mb-4\">{{ \$item->name ?? \$item->title ?? ucfirst('{$moduleSlug}') }}</h1>\n    <div class=\"prose\">\n        {{-- Customize fields as needed --}}\n        <pre class=\"bg-gray-100 p-4 rounded\">{{ json_encode(\$item, JSON_PRETTY_PRINT) }}</pre>\n    </div>\n</div>\n");
+        }
+    }
+
     private function generateFactories(): void
     {
         foreach ($this->data['models'] ?? [] as $modelData) {
@@ -1314,11 +1459,22 @@ class {$this->moduleName}DatabaseSeeder extends Seeder
         $providerClass = "Modules\\{$this->moduleName}\\app\\Providers\\{$this->moduleName}ServiceProvider::class,";
 
         if (!Str::contains($content, $providerClass)) {
-            $content = str_replace(
-                '];',
-                "    {$providerClass}\n];",
-                $content
-            );
+            // Prefer inserting BEFORE CmsEditor provider so module routes register earlier than catch-all
+            $cmsProvider = 'Modules\\CmsEditor\\Providers\\CmsEditorServiceProvider::class,';
+            if (Str::contains($content, $cmsProvider)) {
+                $content = str_replace(
+                    $cmsProvider,
+                    "    {$providerClass}\n    {$cmsProvider}",
+                    $content
+                );
+            } else {
+                // Fallback: append before closing bracket
+                $content = str_replace(
+                    '];',
+                    "    {$providerClass}\n];",
+                    $content
+                );
+            }
 
             File::put($providersFile, $content);
         }

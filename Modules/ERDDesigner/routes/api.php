@@ -15,9 +15,11 @@ use Modules\ERDDesigner\app\Http\Controllers\Api\ERDApiController;
 |
 */
 
-Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
-    Route::apiResource('erd-projects', ERDApiController::class);
-    Route::post('erd-projects/{project}/export-sql', [ERDApiController::class, 'exportSql']);
-    Route::post('erd-projects/{project}/import-sql', [ERDApiController::class, 'importSql']);
-    Route::post('erd-projects/{project}/export-module', [ERDApiController::class, 'exportToModuleBuilder']);
-});
+if (class_exists(ERDApiController::class)) {
+    Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
+        Route::apiResource('erd-projects', ERDApiController::class);
+        Route::post('erd-projects/{project}/export-sql', [ERDApiController::class, 'exportSql']);
+        Route::post('erd-projects/{project}/import-sql', [ERDApiController::class, 'importSql']);
+        Route::post('erd-projects/{project}/export-module', [ERDApiController::class, 'exportToModuleBuilder']);
+    });
+}

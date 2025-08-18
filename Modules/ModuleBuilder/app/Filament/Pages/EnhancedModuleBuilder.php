@@ -62,7 +62,8 @@ class EnhancedModuleBuilder extends Page
             'relationships' => [],
             'generate_factory' => true,
             'generate_seeder' => true,
-            'generate_api' => false,
+            'generate_api' => true,
+            'generate_public' => true,
             'generate_tests' => false,
             'enable_global_search' => true,
             'enable_bulk_actions' => true,
@@ -128,6 +129,16 @@ class EnhancedModuleBuilder extends Page
                 ->label('Enable Bulk Actions')
                 ->default(true)
                 ->helperText('Delete, export, etc.'),
+
+            Toggle::make('generate_public')
+                ->label('Generate Public Pages (SaaS)')
+                ->default(true)
+                ->helperText('Create public controllers, routes, and theme stubs to expose features on the website'),
+
+            Toggle::make('generate_api')
+                ->label('Generate API (v1)')
+                ->default(true)
+                ->helperText('Create REST API controllers, resources, and routes for mobile/app use'),
         ])
         ->statePath('data');
     }
