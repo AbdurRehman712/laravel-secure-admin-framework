@@ -1,9 +1,11 @@
 <?php
 
-namespace Modules\CmsEditor\Providers;
+namespace Modules\CmsEditor\App\Providers;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Modules\CmsEditor\App\Providers\EventServiceProvider;
+use Modules\CmsEditor\App\Providers\RouteServiceProvider;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

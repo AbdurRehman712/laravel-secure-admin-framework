@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\CmsEditor\Providers;
+namespace Modules\CmsEditor\App\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Route;
